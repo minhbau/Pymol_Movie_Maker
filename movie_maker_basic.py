@@ -1,20 +1,32 @@
 from pymol import cmd
 from sys import argv
 import os
+#from shutil import copyfile
 
-#command line parameters are pdb-name, chain_name, ligand_name, session_version
-#pdb_name = argv[1].split(".")[0]
+#command line parameters are pdb-name, chain_name, ligand_name, session_version, output_filepath
 # passed filename is first passed argument, but flags are also in argv
-pdb_name = argv[-1].split(".")[0]
+#pdb_name = argv[-2].split(".")[0]
+pdb_name = argv[1].split(".")[0]
 #print "all arguments", argv
 #print pdb_name
 pdb_filename = pdb_name + ".pdb"
 
-#chain_name = argv[2]
-#ligand_name = argv[3]
+#output directory is managed by shellscript
+#output_filename = argv[-1]
+path_to_galaxy_dir = argv[6]
+
+#original rename script from show_ligand
+os.rename(argv[1], argv[1].split(".")[0]+".pdb")
+cmd.load(argv[1].split(".")[0]+".pdb")
+os.rename(argv[1].split(".")[0]+".pdb", argv[1])
+
+#chain_name = argv[]
+#ligand_name = argv[]
+#ligand_name = argv[]
 #session_version = round(float(argv[4]),2)
 session_version = 1.2
-session_name = "basic_movie_%s_%s.pse" % (pdb_name, session_version)
+#session_name = "basic_movie_%s_%s.pse" % (pdb_name, session_version)
+session_name = "basic_movie_%s.pse" % (session_version,)
 
 pathname = os.path.dirname(argv[0])
 os.path.realpath(__file__)
@@ -24,15 +36,16 @@ print('full path =', full_path)
 
 
 cmd.reinitialize()
-cmd.do("run movie_fade.py")
+cmd.do("run fade_movie.py")
 # movie_fade available at https://raw.githubusercontent.com/Pymol-Scripts/Pymol-script-repo/master/movie_fade.py
 cmd.bg_color("white")
 
 #set session_export to be of desired version #TODO
 cmd.set("pse_export_version", session_version)
 
-#rename .dat file to .pdb
-os.rename(argv[-1], pdb_filename)
+#copy .dat file to .pdb
+#os.rename(argv[-1], pdb_filename)
+#copyfile(argv[-2], pdb_filename)
 #load file into pymol
 cmd.load(pdb_filename)
 
@@ -300,4 +313,7 @@ mview store, 1900, scene=F7
 mview store, 2000, scene=F7
 cmd.set("ray_trace_frames", 1)
 """
+
+
+
 

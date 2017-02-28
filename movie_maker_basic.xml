@@ -1,15 +1,40 @@
 <tool id="movie_maker_basic" name="Movie Maker Basic">
-  <description>Produce a basic pymol session for the creation of a protein ligand interaction movie with PyMol</description>
-  <command interpreter="bash">movie_maker_basic.sh $input </command>
+  <description>produces a basic pymol session for the creation of a protein ligand interaction movie with PyMol</description>
+  <command interpreter="bash">movie_maker_basic.sh $input $residue_number $three_letter_code $chain $output </command>
   <inputs>
     <param format="pdb" name="input" type="data" label="Input Protein" help="Choose pdb file"/>
+    <param format="text" name="residue_number" size="20" type="text" label="Insert residue number of amino acid">
+        <validator type="regex" message="Wrong format! Please enter just integers.">^[0-9]+$</validator>
+    </param>
+    <param format="text" name="three_letter_code" size="20" type="text" label="Insert 3-lette-code of amino acid">
+        <validator type="regex" message="Wrong format! Please enter just 3 letters">^[A-Z,a-z]{3}$</validator>
+    </param>
+    <param format="text" name="chain" size="20" type="text" label="Chain">
+        <validator type="regex" message="Wrong format! Please enter just 1 letter.">^[A-Z,a-z]{1}$</validator>
+    </param>
   </inputs>
   <outputs>
-    <data format="png" name="output" />
+    <data format="pse" name="output" />
   </outputs>
 
   <help>
-    This tool creates a PyMol session, which can be used to produce a movie with PyMol.
+      This tool creates a PyMol session, which can be used to produce a movie with PyMol.
+      # Input Parameter
+      Following parameters should be entered to allow a flawless computation:
+
+        pdb-file
+        residue number
+        three letter code of amino acid
+        chain of the binding pocket in question
+
+      Example:
+      4s0v.pdb
+      145
+      LEU
+      A
+
+      #Output
+      The pymol session (*.pse) can be downloaded as pse file and loaded with pymol.
   </help>
 
 </tool>
