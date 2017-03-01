@@ -50,20 +50,20 @@ def parse_commandline_options():
     #command line parameters are pdb-name, chain_name, ligand_name, session_version, output_filepath
 
     #sele_current_carbonyl = cmd.select("sele_current_carbonyl", "n. O and resi %s and resn %s and chain %s"%(argv[3], argv[4], argv[5]))
-    if len(argv) < NUMBER_OF_ARGUMENTS:
-        raise ArgumentError("Not enough arguments supplied, only got %s, expected %s" % (len(argv), NUMBER_OF_ARGUMENTS))
+    # if len(argv) < NUMBER_OF_ARGUMENTS:
+    #     raise ArgumentError("Not enough arguments supplied, only got %s, expected %s" % (len(argv), NUMBER_OF_ARGUMENTS))
 
-    resi = argv[3]
-    chain_name = argv[4]
-    ligand_name = argv[5]
+    # resi = argv[3]
+    ligand_name = argv[3]
+    chain_name = argv[5]
     path = argv[6]
 
     # Check whether we have a valid amino acid 3 letter code
-    if str(resi).upper() not in valid_amino_acid_3letter_codes:
-        raise ArgumentError("Not a valid three letter amino acid code supplied.")
+    # if str(resi).upper() not in valid_amino_acid_3letter_codes:
+    #     raise ArgumentError("Not a valid three letter amino acid code supplied.")
 
     #TODO create standard case in which no ligand or chain name is required
-    options["resi"] = resi
+    # options["resi"] = resi
     options["ligand_name"] = ligand_name
     options["chain_name"] = chain_name
     options["path"] = path
@@ -71,7 +71,7 @@ def parse_commandline_options():
     return options
 
 
-def apply_settings(options):
+def apply_settings(cmd_options):
     
     settings_dict = {}
     # BG Color is white
@@ -88,7 +88,12 @@ def apply_settings(options):
     settings_dict["colors"] = color_dict
     settings_dict["cartoon_transparency"] = 0.6
     settings_dict["binding_site_radius"] = 5.0
-    
+
+    settings_dict["chain_name"] = cmd_options['chain_name']
+    settings_dict["ligand_name"] = cmd_options['ligand_name']
+    settings_dict["path"] = cmd_options['path']
+
+
     """
     color_protein_surface = "lightblue"
     color_protein_cartoon = "skyblue"
@@ -120,7 +125,7 @@ def create_selections(options):
 
     # Ligand
     #cmd.select("sele_ligand", "resn SUV")	#################################
-    cmd.select("sele_ligand", "organic and chain %s and resn %s" % (options['chain_name'], options["resn"]))
+    cmd.select("sele_ligand", "organic and chain %s and resn %s" % (options['chain_name'], options["ligand_name"]))
     cmd.create("ligand", "sele_ligand")
     cmd.show("sticks", "ligand")
     cmd.color(options["colors"]['ligand'], "ligand and e. C")

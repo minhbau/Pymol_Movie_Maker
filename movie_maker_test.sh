@@ -12,7 +12,7 @@ arr=$(echo $5 | sed -e 's/\(.*\)\/.*/\1\//')
 
 #path="/home/judith/galaxy-dist/tools/customTools"
 #path+="/xbscore_output_pdf.py"
-#echo ${arr}
+echo ${arr}
 
 #echo "working on $MOVIEMAKERPATH"
 #echo "executing $MOVIEMAKERPATH""carbonyl_test.py"

@@ -3,14 +3,14 @@
   <command interpreter="bash">movie_maker_test.sh $input $residue_number $three_letter_code $chain $output</command>
   <inputs>
     <param format="pdb" name="input" type="data" label="Source file"/>
-    <param format="text" name="residue_number" size="20" type="text" label="Insert residue number of aa">
-        <validator type="regex" message="Wrong format! Please enter just integers.">^[0-9]+$</validator>
-    </param>
-    <param format="text" name="three_letter_code" size="20" type="text" label="Insert 3-letter-code of aa">
-	<validator type="regex" message="Wrong format! Please enter just 3 letters">^[A-Z,a-z]{3}$</validator>
+    <param format="text" name="residue_number" size="3" type="text" label="Insert 3 letter ligand residue name">
+        <validator type="regex" message="Wrong format! Please enter just 3 letters.">^[A-Z,a-z]{3}$</validator>
     </param>
     <param format="text" name="chain" size="20" type="text" label="Chain">
         <validator type="regex" message="Wrong format! Please enter just 1 letter.">^[A-Z,a-z]{1}$</validator>
+    </param>
+    <param format="text" name="three_letter_code" size="20" type="text" label="Insert 3-letter-code of aa">
+	<validator type="regex" message="Wrong format! Please enter just 3 letters">^[A-Z,a-z]{3}$</validator>
     </param>
   </inputs>
   <stdio>
@@ -33,14 +33,12 @@ This tool creates a PyMol session, which can be used to produce a movie with PyM
 Following parameters should be entered to allow a flawless computation:
 
     pdb-file
-    residue number
-    three letter code of amino acid
+    three letter code of ligand
     chain of the binding pocket in question
 
 Example:
-    4s0v.pdb
-    145
-    LEU
+    1r4l.pdb
+    NAG
     A
 
 **Output**
