@@ -33,7 +33,6 @@ export MOVIE_MAKER_PATH= $galaxy"tools/customTools/movie_maker/"
 cd ${arr}
 
 # move created pymol session from current directory to output directory
-echo "new session created!" > basic_movie_1.2.pse
 mv basic_movie_1.2.pse $5
 
 #deactivate conda env
