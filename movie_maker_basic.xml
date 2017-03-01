@@ -18,23 +18,28 @@
   </outputs>
 
   <help>
-      This tool creates a PyMol session, which can be used to produce a movie with PyMol.
-      # Input Parameter
-      Following parameters should be entered to allow a flawless computation:
 
-        pdb-file
-        residue number
-        three letter code of amino acid
-        chain of the binding pocket in question
+This tool creates a PyMol session, which can be used to produce a movie with PyMol.
 
-      Example:
-      4s0v.pdb
-      145
-      LEU
-      A
+**Input Parameter**
 
-      #Output
-      The pymol session (*.pse) can be downloaded as pse file and loaded with pymol.
+Following parameters should be entered to allow a flawless computation:
+
+    pdb-file
+    residue number
+    three letter code of amino acid
+    chain of the binding pocket in question
+
+Example:
+    4s0v.pdb
+    145
+    LEU
+    A
+
+**Output**
+
+The pymol session (\*.pse) can be downloaded as pse file and loaded with pymol.
+
   </help>
 
 </tool>

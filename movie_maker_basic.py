@@ -1,7 +1,11 @@
 from pymol import cmd
 from sys import argv
 import os
+from time import sleep
 #from shutil import copyfile
+
+#PATH TO CURRENT DIRECTORY
+MOVIE_MAKER_PATH = os.environ['MOVIE_MAKER_PATH']
 
 #command line parameters are pdb-name, chain_name, ligand_name, session_version, output_filepath
 # passed filename is first passed argument, but flags are also in argv
@@ -13,11 +17,15 @@ pdb_filename = pdb_name + ".pdb"
 
 #output directory is managed by shellscript
 #output_filename = argv[-1]
-path_to_galaxy_dir = argv[6]
+path_to_input_file_in_database = argv[6]
 
 #original rename script from show_ligand
 os.rename(argv[1], argv[1].split(".")[0]+".pdb")
+#renaming the *.dat file to *.pdb
 cmd.load(argv[1].split(".")[0]+".pdb")
+#wait for loading of file
+#sleep(2.3)
+print("loading %s"% (pdb_filename,))
 os.rename(argv[1].split(".")[0]+".pdb", argv[1])
 
 #chain_name = argv[]
@@ -28,15 +36,16 @@ session_version = 1.2
 #session_name = "basic_movie_%s_%s.pse" % (pdb_name, session_version)
 session_name = "basic_movie_%s.pse" % (session_version,)
 
-pathname = os.path.dirname(argv[0])
-os.path.realpath(__file__)
-full_path = os.path.abspath(pathname)+"/%s"% (pdb_filename,)
-print('full path =', full_path)
+#pathname = os.path.dirname(argv[0])
+#os.path.realpath(__file__)
+#full_path = os.path.abspath(pathname)+"/%s"% (pdb_filename,)
+#print('full path =', full_path)
 
 
 
 cmd.reinitialize()
-cmd.do("run fade_movie.py")
+print("Path to input file = %s" % (path_to_input_file_in_database,))
+cmd.do("run %sfade_movie.py"% (MOVIE_MAKER_PATH, ))
 # movie_fade available at https://raw.githubusercontent.com/Pymol-Scripts/Pymol-script-repo/master/movie_fade.py
 cmd.bg_color("white")
 
