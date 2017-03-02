@@ -223,7 +223,7 @@ def do_it():
     create_selections(settings_dict)
     create_views(settings_dict)
     #create scenes and frames for movie, execute a pymol script with @
-    cmd.do("@movie_maker_basic_script.pml")
+    cmd.do("@%smovie_maker_basic_script.pml" % MOVIE_MAKER_PATH)
     #Save session
     cmd.save("basic_movie.pse")
 
