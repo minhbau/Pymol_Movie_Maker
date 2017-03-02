@@ -1,16 +1,13 @@
 <tool id="movie_maker_test" name="Make basic movie">
   <description>produces a basic pymol session for the creation of a protein ligand interaction movie with PyMol</description>
-  <command interpreter="bash">movie_maker_test.sh $input $residue_number $three_letter_code $chain $output</command>
+  <command interpreter="bash">movie_maker_test.sh $input $residue_name $chain $output</command>
   <inputs>
     <param format="pdb" name="input" type="data" label="Source file"/>
-    <param format="text" name="residue_number" size="3" type="text" label="Insert 3 letter ligand residue name">
-        <validator type="regex" message="Wrong format! Please enter just 3 letters.">^[A-Z,a-z]{3}$</validator>
+    <param format="text" name="residue_name" size="3" type="text" label="Insert 3 letter ligand residue name">
+        <validator type="regex" message="Wrong format! Please enter just 3 letters.">^[A-Z,a-z,0-9]{3}$</validator>
     </param>
     <param format="text" name="chain" size="20" type="text" label="Chain">
         <validator type="regex" message="Wrong format! Please enter just 1 letter.">^[A-Z,a-z]{1}$</validator>
-    </param>
-    <param format="text" name="three_letter_code" size="20" type="text" label="Insert 3-letter-code of aa">
-	<validator type="regex" message="Wrong format! Please enter just 3 letters">^[A-Z,a-z]{3}$</validator>
     </param>
   </inputs>
   <stdio>

@@ -47,16 +47,16 @@ def parse_commandline_options():
     for i, ele in enumerate(argv):
         print("argv[%s]" % i, ele)
 
-    #command line parameters are pdb-name, chain_name, ligand_name, session_version, output_filepath
+    #command line parameters are pdb-name, ligand_name, chain_name, output_filepath
+    # session_version?
 
-    #sele_current_carbonyl = cmd.select("sele_current_carbonyl", "n. O and resi %s and resn %s and chain %s"%(argv[3], argv[4], argv[5]))
     # if len(argv) < NUMBER_OF_ARGUMENTS:
     #     raise ArgumentError("Not enough arguments supplied, only got %s, expected %s" % (len(argv), NUMBER_OF_ARGUMENTS))
 
     # resi = argv[3]
     ligand_name = argv[3]
-    chain_name = argv[5]
-    path = argv[6]
+    chain_name = argv[4]
+    # path = argv[6]
 
     # Check whether we have a valid amino acid 3 letter code
     # if str(resi).upper() not in valid_amino_acid_3letter_codes:
@@ -66,7 +66,7 @@ def parse_commandline_options():
     # options["resi"] = resi
     options["ligand_name"] = ligand_name
     options["chain_name"] = chain_name
-    options["path"] = path
+    # options["path"] = path
     #output directory is managed by shellscript
     return options
 
