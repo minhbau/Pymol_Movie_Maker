@@ -1,13 +1,16 @@
 #!/bin/bash
 #echo $1 # path to pdb file (input)
 #echo $2 # ligand name
-#echo $4 # chain
-#echo $5 # path?
+#echo $3 # chain
+#echo $4 # path?
 
 export PYTHONPATH="/home/webservices/philipp/special_pymol/modules:${PYTHONPATH}"
 export MOVIEMAKERPATH="$galaxy""tools/customTools/movie_maker/"
 
-arr=$(echo $5 | sed -e 's/\(.*\)\/.*/\1\//')
+# ser environment variable to enable rendering on the server with movie.produce
+export FREEMOL=~/dev/freemol-trunk/freemol
+
+arr=$(echo $4 | sed -e 's/\(.*\)\/.*/\1\//')
 
 #path="/home/judith/galaxy-dist/tools/customTools"
 #path+="/xbscore_output_pdf.py"
@@ -21,5 +24,5 @@ echo ${arr}
 #
 #echo "test working?" > test.pse
 #mv blubb.pse $5
-mv basic_movie.pse $5
+mv basic_movie.pse $4
 

@@ -5,6 +5,7 @@ from sys import argv
 import os
 #from shutil import copyfile
 
+
 #PATH TO CURRENT DIRECTORY
 MOVIE_MAKER_PATH = os.environ.get('MOVIEMAKERPATH')
 
@@ -91,8 +92,7 @@ def apply_settings(cmd_options):
 
     settings_dict["chain_name"] = cmd_options['chain_name']
     settings_dict["ligand_name"] = cmd_options['ligand_name']
-    settings_dict["path"] = cmd_options['path']
-
+    # settings_dict["path"] = cmd_options['path']
 
     """
     color_protein_surface = "lightblue"
@@ -222,6 +222,8 @@ def do_it():
     settings_dict = apply_settings(commandline_options)
     create_selections(settings_dict)
     create_views(settings_dict)
+    #create scenes and frames for movie, execute a pymol script with @
+    cmd.do("@basic_movie_script.pml")
     #Save session
     cmd.save("basic_movie.pse")
 
@@ -336,16 +338,18 @@ def create_views(options):
     #        84.767715454,  112.592117310,  -20.000000000 """)
     cmd.view("7", action="store")
     cmd.scene("F7", action="store")
+    cmd.viewport(500, 500)
 
 '''
 #record the movie
+#run script with @script.txt
+#cmd.viewport(2000, 2000)
 """
-cmd.viewport(2000, 2000)
 mset 1x2000
 mview store, 1, scene=F1
 turn y, 120
 mview store, 100, power = 1.0
-turn y, 120
+turn y, 120[
 mview store, 200, power = 1.0
 mview store, 300, scene=F1
 turn x, 120
@@ -378,9 +382,25 @@ turn y, -120
 mview store, 1850, power = 1.0
 mview store, 1900, scene=F7
 mview store, 2000, scene=F7
-cmd.set("ray_trace_frames", 1)
+set ray_trace_frames, 1
 """
 
+
+"""
+#TODO get all polar interacting amino acids and zoom into each of them
+# 10 frames per AA
+mset 1 x1440
+mview store
+
+# this code maps the zooming of
+# one AA and it's neighbor to 10 frames
+python
+for x in range(0,144):
+  cmd.frame((10*x)+1)
+  cmd.zoom( "n. CA and i. " + str(x) + "+" + str(x+1))
+  cmd.mview("store")
+python end
+"""
 '''
 
 do_it()
