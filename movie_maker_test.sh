@@ -1,14 +1,13 @@
 #!/bin/bash
+#execute our lovely script with the correct pymol and passed commondaline parameters
 #echo $1 # path to pdb file (input)
 #echo $2 # ligand name
 #echo $3 # chain
-#echo $4 # path?
+#echo $4 # path
 
 export PYTHONPATH="/home/webservices/philipp/special_pymol/modules:${PYTHONPATH}"
 export MOVIEMAKERPATH="$galaxy""tools/customTools/movie_maker/"
 
-# ser environment variable to enable rendering on the server with movie.produce
-export FREEMOL=~/dev/freemol-trunk/freemol
 
 arr=$(echo $4 | sed -e 's/\(.*\)\/.*/\1\//')
 

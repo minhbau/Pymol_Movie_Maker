@@ -3,8 +3,7 @@ from argparse import ArgumentError
 from pymol import cmd
 from sys import argv
 import os
-#from shutil import copyfile
-
+from string import ascii_uppercase
 
 #PATH TO CURRENT DIRECTORY
 MOVIE_MAKER_PATH = os.environ.get('MOVIEMAKERPATH')
@@ -57,20 +56,35 @@ def parse_commandline_options():
     # resi = argv[3]
     ligand_name = argv[3]
     chain_name = argv[4]
-    # path = argv[6]
+
 
     # Check whether we have a valid amino acid 3 letter code
     # if str(resi).upper() not in valid_amino_acid_3letter_codes:
     #     raise ArgumentError("Not a valid three letter amino acid code supplied.")
 
-    #TODO create standard case in which no ligand or chain name is required
-    # options["resi"] = resi
+    #TODO create standard case in which no ligand name is required
     options["ligand_name"] = ligand_name
     options["chain_name"] = chain_name
     # options["path"] = path
     #output directory is managed by shellscript
     return options
 
+
+def apply_colorblind_save(color_dict):
+    #import color settings
+    cmd.do("run %scolorblindfriendly.py" % MOVIE_MAKER_PATH)
+
+    color_dict['protein_surface'] = "cb_sky_blue"
+    color_dict['protein_cartoon'] = "cb_blue"
+    color_dict['ligand'] = "cb_yellow"
+    color_dict['cofactor'] = "cb_orange"
+    color_dict['binding_site'] = "grey50"
+    color_dict['interaction_polar'] = "cb_blue"
+    # color_dict['oxygen'] = "cb_red"
+    color_dict['oxygen'] = "cb_reddish_purple"
+    color_dict['nitrogen'] = "cb_blue"
+
+    return color_dict
 
 def apply_settings(cmd_options):
     
@@ -79,12 +93,13 @@ def apply_settings(cmd_options):
     cmd.bg_color('white')
     
     # Colors
-    color_dict = {}
-    color_dict['protein_surface'] = "lightblue"
-    color_dict['protein_cartoon'] = "skyblue"
-    color_dict['ligand'] = "yellow"
-    color_dict['cofactor'] = "sand"
-    color_dict['binding_site'] = "grey50"
+    color_dict = apply_colorblind_save({})
+    # color_dict['protein_surface'] = "lightblue"
+    # color_dict['protein_cartoon'] = "skyblue"
+    # color_dict['ligand'] = "yellow"
+    # color_dict['cofactor'] = "sand"
+    # color_dict['binding_site'] = "grey50"
+
 
     settings_dict["colors"] = color_dict
     settings_dict["cartoon_transparency"] = 0.6
@@ -111,11 +126,6 @@ def apply_settings(cmd_options):
 
 def create_selections(options):
 
-    # cmd.select('ligand', 'organic and chain A')
-    # cmd.show('sticks', 'ligand')
-    # cmd.zoom('ligand', 10)
-    #sele_current_carbonyl = cmd.select("sele_current_carbonyl", "n. O and resi %s and resn %s and chain %s"%(argv[3], argv[4], argv[5]))	
-
     # Hide everything
     cmd.hide("lines")
     cmd.hide("nonbonded")
@@ -125,11 +135,22 @@ def create_selections(options):
 
     # Ligand
     #cmd.select("sele_ligand", "resn SUV")	#################################
-    cmd.select("sele_ligand", "organic and chain %s and resn %s" % (options['chain_name'], options["ligand_name"]))
+    number_of_ligands_selected = cmd.select("sele_ligand", "organic and chain %s and resn %s" % (options['chain_name'], options["ligand_name"]))
+
+    #Feature: If we did not get a correct chain name from the user, we will try to guess through the whole alphabet to find it
+    # otherwise the ligand will not appear in the visualization
+    if not number_of_ligands_selected:
+        #list holding all ascii-letters
+        for letter in ascii_uppercase:
+            number_of_ligands_selected = cmd.select("sele_ligand", "organic and chain %s and resn %s" % (letter, options["ligand_name"]))
+            if number_of_ligands_selected:
+                break
+
     cmd.create("ligand", "sele_ligand")
     cmd.show("sticks", "ligand")
     cmd.color(options["colors"]['ligand'], "ligand and e. C")
-    cmd.zoom('ligand', 10)
+    cmd.color(options["colors"]['oxygen'], "ligand and e. O")
+    cmd.color(options["colors"]['nitrogen'], "ligand and e. N")
 
     # Cofactor
     #cmd.select("sele_cofactor", "resn OLA")	#################################
@@ -171,6 +192,8 @@ def create_selections(options):
     cmd.show("sticks", "binding_site")
     cmd.show("nb_spheres", "binding_site")
     cmd.color(options["colors"]['binding_site'], "binding_site and e. C")
+    cmd.color(options["colors"]['nitrogen'], "binding_site and e. N")
+    cmd.color(options["colors"]['oxygen'], "binding_site and e. O")
 
     # TODO quickfix for basic movie
     cmd.select("interacting_residues", "sele_binding_site")
@@ -193,11 +216,13 @@ def create_selections(options):
     # cmd.color('lightblue','interacting_residues')
     cmd.show("sticks", "interacting_residues")
     cmd.color("grey50", "interacting_residues and e. C")
+    cmd.color(options["colors"]['nitrogen'], "interacting_residues and e. N")
+    cmd.color(options["colors"]['oxygen'], "interacting_residues and e. O")
 
     # Polar contacts
     cmd.distance("interaction_polar", "ligand", "binding_site", mode=2)
     cmd.hide("labels", "interaction_polar")
-    cmd.color("blue", "interaction_polar")
+    cmd.color(options['colors']["interaction_polar"], "interaction_polar")
 
     # other polar interactions
     # cmd.distance("interaction_polar", "sele_interacting_HIS350", "sele_interacting_HOH4025", mode=2)
