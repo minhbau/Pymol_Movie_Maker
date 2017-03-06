@@ -4,12 +4,10 @@ from pymol import cmd
 from sys import argv
 import os
 from string import ascii_uppercase
-from polar_pairs import polarpairs, polartuples
-
 
 #PATH TO CURRENT DIRECTORY
 MOVIE_MAKER_PATH = os.environ.get('MOVIEMAKERPATH')
-POLAR_INTERACTIONS_FILENAME = os.environ.get('POLAR_INTERACTION_FILENAME')
+
 #SESSION_VERSION = round(float(argv[4]),2)
 SESSION_VERSION = 1.2
 SESSION_NAME = "basic_movie.pse"
@@ -21,11 +19,13 @@ cmd.reinitialize()
 #set session_export to be of desired version 
 cmd.set("pse_export_version", SESSION_VERSION)
 
+
 # load pdb file (first argument)
 #renaming the *.dat file to *.pdb, loading with pymol and renaming for galaxy
 os.rename(argv[1], argv[1].split(".")[0]+".pdb")
 cmd.load(argv[1].split(".")[0]+".pdb")
 os.rename(argv[1].split(".")[0]+".pdb", argv[1])
+
 
 # Parse commandline arguments
 
@@ -36,8 +36,6 @@ print("loading %s"% (PDB_FILENAME,))
 
 # movie_fade available at https://raw.githubusercontent.com/Pymol-Scripts/Pymol-script-repo/master/movie_fade.py
 cmd.do("run %sfade_movie.py"% (MOVIE_MAKER_PATH, ))
-# define polarpairs function retrieved from https://pymolwiki.org/index.php/Polarpairs
-cmd.do("run %spolar_pairs.py"% (MOVIE_MAKER_PATH, ))
 
 valid_amino_acid_3letter_codes = set("ALA CYS ASP GLU PHE GLY HIS ILE LYS LEU MET ASN PRO GLN ARG SER THR VAL TRP TYR WAT SUL HEM".split(" "))
 
@@ -145,6 +143,7 @@ def create_selections(options):
     cmd.select("protein_structure", "all")
 
     # Ligand
+    #cmd.select("sele_ligand", "resn SUV")	#################################
     number_of_ligands_selected = cmd.select("sele_ligand", "organic and chain %s and resn %s" % (options['chain_name'], options["ligand_name"]))
 
     #Feature: If we did not get a correct chain name from the user, we will try to guess through the whole alphabet to find it
@@ -205,20 +204,9 @@ def create_selections(options):
     cmd.color(options["colors"]['nitrogen'], "binding_site and e. N")
     cmd.color(options["colors"]['oxygen'], "binding_site and e. O")
 
-    # get polar interacting residues in binding site
-    pairs = polarpairs("binding_site", "ligand", name="polar_interaction_distance")
-    interacting_tuples = polartuples(pairs, residue_name="polar_interaction")
+    # TODO quickfix for basic movie
+    cmd.select("interacting_residues", "sele_binding_site")
 
-    #create a list with selection names of polar_interacting residues
-    polar_selection_names = ["resn %s and resi %s and chain %s" % tup for tup in interacting_tuples]
-
-    #write the residues into a custom text file,
-    with open("%s" % (POLAR_INTERACTIONS_FILENAME, ), "w") as f:
-        f.write("RESI\tRESN\tCHAIN\n")
-        for tup in interacting_tuples:
-            f.write("%s\t%s\t%s\n" % tup)
-
-    # cmd.select("interacting_residues", "sele_binding_site")
     # resi_list = [str(tup[1]) for tup in resn_tuples]
     # print resi_list
     # resi_list = [110, 111, 227, 324, 350, 4025]
@@ -245,7 +233,6 @@ def create_selections(options):
     cmd.hide("labels", "interaction_polar")
     cmd.color(options['colors']["interaction_polar"], "interaction_polar")
 
-
     # other polar interactions
     # cmd.distance("interaction_polar", "sele_interacting_HIS350", "sele_interacting_HOH4025", mode=2)
     # additional hbb to water in pocket
@@ -262,13 +249,6 @@ def create_selections(options):
 
     # Add more interactions using names such as "interaction_halogen_bond" or "inteteraction_CH_pi"
 
-def get_polar_interacting_residues(sel1="ligand", sel2="binding_site"):
-    # m1 = cmd.get_model(sel1 + " around 5.0 and " + sel2)
-
-    # get all oxygen or nitrogen atoms in the ligand
-    # check for proton acceptor / donator in radius of 5 A
-    #
-    return
 
 def do_it():
     # run all script components
@@ -298,7 +278,7 @@ def print_binding_site_residues():
             my_resns.append(a_tuple)
     return my_resns
 
-# resn_tuples = print_binding_site_residues()
+#resn_tuples = print_binding_site_residues()
 
 #cmd.select("sele_interacting_ALA110", "sele_binding_site and resi 110")
 #cmd.select("sele_interacting_THR111", "sele_binding_site and resi 111")
@@ -393,7 +373,6 @@ def create_views(options):
     cmd.view("7", action="store")
     cmd.scene("F7", action="store")
     cmd.viewport(500, 500)
-
 
 '''
 #record the movie
