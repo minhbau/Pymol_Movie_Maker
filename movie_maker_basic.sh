@@ -8,13 +8,17 @@
 #echo $6 # path pymol-script file
 
 
-#include library path to pymol in pythonpath, so python knows about the pymol 1.8.4 module
-export PYTHONPATH="/home/webservices/philipp/special_pymol/modules:${PYTHONPATH}"
+
 #used in our pymolscript as prefix for our script files
 export MOVIEMAKERPATH="$galaxy""tools/customTools/movie_maker/"
+
+#include library path to pymol in pythonpath, so python knows about the pymol 1.8.4 module
+#include current directory in pythonpath, so scripts are available to import
+export PYTHONPATH="/home/webservices/philipp/special_pymol/modules:${MOVIEMAKERPATH}:${PYTHONPATH}"
 #used in pymolscript to save a seccond output
 export POLAR_INTERACTION_FILENAME="polar_interaction_partners.txt"
 
+echo $POLAR_INTERACTION_FILENAME
 
 arr=$(echo $5 | sed -e 's/\(.*\)\/.*/\1\//')
 

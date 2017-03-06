@@ -4,6 +4,9 @@ from pymol import cmd
 from sys import argv
 import os
 from string import ascii_uppercase
+# methods are only available over cmd.do when not importing, this makes passing of variables complicated
+# we rely on the correct setting of the PYTHONPATH environment variable,
+#   to include the directory in which polar_pairs.py resides
 from polar_pairs import polarpairs, polartuples
 
 
@@ -36,7 +39,7 @@ print("loading %s"% (PDB_FILENAME,))
 
 # movie_fade available at https://raw.githubusercontent.com/Pymol-Scripts/Pymol-script-repo/master/movie_fade.py
 cmd.do("run %sfade_movie.py"% (MOVIE_MAKER_PATH, ))
-# define polarpairs function retrieved from https://pymolwiki.org/index.php/Polarpairs
+# define polarpairs function for usage in commandline, retrieved and extended from https://pymolwiki.org/index.php/Polarpairs
 cmd.do("run %spolar_pairs.py"% (MOVIE_MAKER_PATH, ))
 
 valid_amino_acid_3letter_codes = set("ALA CYS ASP GLU PHE GLY HIS ILE LYS LEU MET ASN PRO GLN ARG SER THR VAL TRP TYR WAT SUL HEM".split(" "))
@@ -197,6 +200,7 @@ def create_selections(options):
     cmd.select("sele_binding_site", "sele_binding_site and protein_structure")
     cmd.select("sele_binding_site", "sele_binding_site and not sele_ligand")
     cmd.create("binding_site", "sele_binding_site")
+    cmd.delete("sele_binding_site")
     cmd.hide("surface", "binding_site")
     cmd.hide("nonbonded")
     cmd.show("sticks", "binding_site")
@@ -206,46 +210,56 @@ def create_selections(options):
     cmd.color(options["colors"]['oxygen'], "binding_site and e. O")
 
     # get polar interacting residues in binding site
-    pairs = polarpairs("binding_site", "ligand", name="polar_interaction_distance")
+    pairs = polarpairs("binding_site", "ligand", cutoff=4.0, name="polar_interaction_distance")
+    cmd.hide("labels", "polar_interaction_distance")
+    cmd.color(options['colors']["interaction_polar"], "polar_interaction_distance")
+    # print "pairs = " , pairs
     interacting_tuples = polartuples(pairs, residue_name="polar_interaction")
 
+
     #create a list with selection names of polar_interacting residues
-    polar_selection_names = ["resn %s and resi %s and chain %s" % tup for tup in interacting_tuples]
+    polar_selection_names = ["resi %s and resn %s and chain %s" % tup for tup in interacting_tuples]
 
     #write the residues into a custom text file,
     with open("%s" % (POLAR_INTERACTIONS_FILENAME, ), "w") as f:
+        f.write("#POLAR INTERACTION PARTNERS WITH %s\n" % (options['ligand_name'],))
         f.write("RESI\tRESN\tCHAIN\n")
         for tup in interacting_tuples:
             f.write("%s\t%s\t%s\n" % tup)
 
-    # cmd.select("interacting_residues", "sele_binding_site")
-    # resi_list = [str(tup[1]) for tup in resn_tuples]
-    # print resi_list
-    # resi_list = [110, 111, 227, 324, 350, 4025]
-    # resi_list = [str(asd) for asd in resi_list]
-    # s = " or resi "
-    # resi_or_string = s.join(resi_list)
-    # non_resi_string = " and not resi ".join(resi_list)
-    # print(resi_or_string)
-    # print non_resi_string
+    #select all polar interacting residues at once for an overview
+    # cmd.select("polar_interacting_residues", "")
+    for i, selection_name in enumerate(polar_selection_names):
+        if i:  # if i>0 and we already have sele_polar_interacting_residues
+            cmd.select("sele_polar_interacting_residues", "sele_polar_interacting_residues or %s" % selection_name)
+            print("select sele_polar_interacting_residues, sele_polar_interacting_residues or %s" % selection_name)
+        else:
+            cmd.select("sele_polar_interacting_residues", selection_name)
+            print("select sele_polar_interacting_residues, %s" % selection_name)
+    cmd.create("polar_interacting_residues", "sele_polar_interacting_residues")
+    # cmd.delete("sele_polar_interacting_residues")
 
+    cmd.show("sticks", "polar_interacting_residues")
+    cmd.color("grey50", "polar_interacting_residues and e. C")
+    cmd.color(options["colors"]['nitrogen'], "polar_interacting_residues and e. N")
+    cmd.color(options["colors"]['oxygen'], "polar_interacting_residues and e. O")
+
+    # cmd.select("interacting_residues", "sele_binding_site")
     # cmd.create("interacting_residues", "sele_binding_site and resi %s" % (resi_or_string))
     # cmd.create("non_interacting_residues", "sele_binding_site and not resi %s" % (non_resi_string))
     # cmd.show("sticks", 'non_interacting_residues')
     # cmd.hide('non_interacting_residues')
     # cmd.hide('binding_site')
     # cmd.color('lightblue','interacting_residues')
-    cmd.show("sticks", "interacting_residues")
-    cmd.color("grey50", "interacting_residues and e. C")
-    cmd.color(options["colors"]['nitrogen'], "interacting_residues and e. N")
-    cmd.color(options["colors"]['oxygen'], "interacting_residues and e. O")
-
-    # Polar contacts
-    cmd.distance("interaction_polar", "ligand", "binding_site", mode=2)
-    cmd.hide("labels", "interaction_polar")
-    cmd.color(options['colors']["interaction_polar"], "interaction_polar")
 
 
+    # old way Polar contacts
+    # cmd.distance("interaction_polar", "ligand", "binding_site", mode=2)
+    # cmd.hide("labels", "interaction_polar")
+    # cmd.color(options['colors']["interaction_polar"], "interaction_polar")
+
+
+    #TODO create selection for HOH molecules in binding pocket and make nb_spheres
     # other polar interactions
     # cmd.distance("interaction_polar", "sele_interacting_HIS350", "sele_interacting_HOH4025", mode=2)
     # additional hbb to water in pocket
@@ -352,16 +366,19 @@ def create_views(options):
     cmd.enable("ligand")
     cmd.enable("protein_cartoon")
     cmd.orient("ligand")
-    cmd.zoom("interacting_residues", 2)
+    cmd.zoom("binding_site", 2)
     cmd.view("5", action="store")
     cmd.scene("F5", action="store")
 
     # 6 and F6
     cmd.disable("all")
     cmd.enable("ligand")
-    cmd.enable("interacting_residues")
-    cmd.enable("interaction_polar")
-    cmd.zoom("interacting_residues", 2)
+    cmd.enable("binding_site")
+    cmd.enable("polar_interacting_residues")
+    cmd.enable("polar_interaction_distance")
+    # cmd.enable("interaction_polar")
+    # cmd.zoom("interacting_residues", 2)
+    cmd.zoom("polar_interacting_residues", 2)
     #cmd.set_view("""\
     #                 -0.652670681,   -0.733961642,    0.187926084,\
     #                  0.654971540,   -0.671278477,   -0.346988708,\
@@ -375,10 +392,12 @@ def create_views(options):
     # 7 and F7
     cmd.disable("all")
     cmd.enable("ligand")
-    cmd.enable("binding_site")
-    cmd.enable("interacting_residues")
+    # cmd.enable("binding_site")
+    cmd.enable("polar_interacting_residues")
+    cmd.enable("polar_interaction_distance")
     cmd.enable("interaction_polar")
-    cmd.zoom("interaction_polar", 2)
+    cmd.zoom("polar_interaction_distance", 2)
+    #TODO
     #cmd.enable("interaction_halogen_bond_distance")
     #cmd.enable("interaction_halogen_bond_angle")
     #cmd.hide("sticks", "binding_site")
