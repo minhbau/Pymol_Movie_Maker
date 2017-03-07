@@ -41,6 +41,7 @@ def parse_commandline_options():
     parser.add_argument("--ligand_name", required=True)
     parser.add_argument("--chain_name", required=True)
     parser.add_argument("--color_blind_friendly", default=True)
+    parser.add_argument("--binding_site_radius", default=4.0)
     # parser.add_argument("--", required=True)
     args = parser.parse_args()
     options = vars(args)  # put variables into dictionary

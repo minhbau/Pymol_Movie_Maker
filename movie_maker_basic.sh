@@ -1,5 +1,5 @@
 #!/bin/bash
-#execute our lovely script with the correct pymol and passed commondaline parameters
+#execute our lovely script with the correct pymol, python library support and passed commandline parameters
 #echo $1 # path to pdb file (input)
 #echo $2 # ligand name
 #echo $3 # chain
@@ -7,9 +7,8 @@
 #echo $5 # path pse file
 #echo $6 # path pymol-script file
 
-
-
-#used in our pymolscript as prefix for our script files
+echo $7
+#used in our pymolscript as prefix for our script files, $galaxy is set in the startup script of the galaxy server
 export MOVIEMAKERPATH="$galaxy""tools/customTools/movie_maker/"
 
 #include library path to pymol in pythonpath, so python knows about the pymol 1.8.4 module
