@@ -7,7 +7,6 @@
 #echo $5 # path pse file
 #echo $6 # path pymol-script file
 
-echo $7
 #used in our pymolscript as prefix for our script files, $galaxy is set in the startup script of the galaxy server
 export MOVIEMAKERPATH="$galaxy""tools/customTools/movie_maker/"
 

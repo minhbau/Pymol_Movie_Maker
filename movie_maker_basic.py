@@ -13,14 +13,9 @@ from polar_pairs import polarpairs, polartuples
 #PATH TO CURRENT DIRECTORY
 MOVIE_MAKER_PATH = os.environ.get('MOVIEMAKERPATH')
 POLAR_INTERACTIONS_FILENAME = os.environ.get('POLAR_INTERACTION_FILENAME')
-
-SESSION_VERSION = 1.2
 SESSION_NAME = "basic_movie.pse"
 
 cmd.reinitialize()
-
-#set session_export to be of desired version 
-cmd.set("pse_export_version", SESSION_VERSION)
 
 # movie_fade available at https://raw.githubusercontent.com/Pymol-Scripts/Pymol-script-repo/master/movie_fade.py
 cmd.do("run %sfade_movie.py"% (MOVIE_MAKER_PATH, ))
@@ -41,13 +36,16 @@ def parse_commandline_options():
     parser.add_argument("--ligand_name", required=True)
     parser.add_argument("--chain_name", required=True)
     parser.add_argument("--color_blind_friendly", default=True)
-    parser.add_argument("--binding_site_radius", default=4.0)
+    parser.add_argument("--binding_site_radius", type=float, default=4.0)
+    parser.add_argument("--check_halogen_interaction", default=False)
+    parser.add_argument("--water_in_binding_site", default=True)
+    parser.add_argument("--color_carbon", type=str, default="yellow")
+    parser.add_argument("--session_export_version", type=float, default=1.2)
     # parser.add_argument("--", required=True)
     args = parser.parse_args()
     options = vars(args)  # put variables into dictionary
     if args.input:
         if os.path.exists(args.input):
-            print("Made it, got %s" % args.input)
             input = args.input
             # Parse commandline arguments
             PDB_NAME = input.split(".")[0]
@@ -59,6 +57,34 @@ def parse_commandline_options():
         else:
             options["color_blind_friendly"] = True
 
+    if args.check_halogen_interaction:
+        if args.check_halogen_interaction == "No":
+            options["check_halogen_interaction"] = False
+        else:
+            options["check_halogen_interaction"] = True
+
+    if args.water_in_binding_site:
+        if args.water_in_binding_site == "No":
+            options["water_in_binding_site"] = False
+        else:
+            options["water_in_binding_site"] = True
+
+    if args.color_carbon:
+        # options are yellow, grey and orange, only need to change when color blind friendly
+        if options['color_blind_friendly']:
+            if args.color_carbon == "yellow":
+                options["color_carbon"] = "cb_yellow"
+            elif args.color_carbon == "orange":
+                options["color_carbon"] = "cb_orange"
+
+    session_version = 1.2
+    if args.session_export_version:
+        allowed_versions = {1.2, 1.72, 1.76, 1.84}
+        if args.session_export_version in allowed_versions:
+            session_version = args.session_export_version
+
+    # set session_export to be of desired version
+    cmd.set("pse_export_version", session_version)
 
     # load pdb file (first argument)
     # renaming the *.dat file to *.pdb, loading with pymol and renaming for galaxy
@@ -74,21 +100,21 @@ def parse_commandline_options():
 
 def apply_color_switch(color_blind_save_selected):
     color_dict = {}
+
     if color_blind_save_selected:
         #import color settings
         cmd.do("run %scolorblindfriendly.py" % MOVIE_MAKER_PATH)
         color_dict['protein_surface'] = "cb_sky_blue"
         color_dict['protein_cartoon'] = "cb_blue"
-        color_dict['ligand'] = "cb_yellow"
         color_dict['cofactor'] = "cb_orange"
         color_dict['binding_site'] = "grey50"
         color_dict['interaction_polar'] = "cb_blue"
         color_dict['oxygen'] = "cb_red"
         color_dict['nitrogen'] = "cb_blue"
+
     else:
         color_dict['protein_surface'] = "lightblue"
         color_dict['protein_cartoon'] = "skyblue"
-        color_dict['ligand'] = "yellow"
         color_dict['cofactor'] = "sand"
         color_dict['binding_site'] = "grey50"
         color_dict['interaction_polar'] = "blue"
@@ -106,27 +132,14 @@ def apply_settings(cmd_options):
     
     # Colors
     color_dict = apply_color_switch(cmd_options["color_blind_friendly"])
+    color_dict["color_carbon"] = cmd_options["color_carbon"]
 
     settings_dict["colors"] = color_dict
     settings_dict["cartoon_transparency"] = 0.6
-    settings_dict["binding_site_radius"] = 5.0
 
     settings_dict["chain_name"] = cmd_options['chain_name']
     settings_dict["ligand_name"] = cmd_options['ligand_name']
-    # settings_dict["path"] = cmd_options['path']
-
-    """
-    color_protein_surface = "lightblue"
-    color_protein_cartoon = "skyblue"
-    color_ligand = "yellow"
-    color_cofactor = "sand"
-    color_binding_site = "grey50"
-
-    # Other settings
-    cartoon_transparency = 0.6
-    bs_radius = 5.0
-    """
-
+    settings_dict["binding_site_radius"] = cmd_options['binding_site_radius']
     return settings_dict
 
 
@@ -153,7 +166,7 @@ def create_selections(options):
 
     cmd.create("ligand", "sele_ligand")
     cmd.show("sticks", "ligand")
-    cmd.color(options["colors"]['ligand'], "ligand and e. C")
+    cmd.color(options["colors"]['color_carbon'], "ligand and e. C")
     cmd.color(options["colors"]['oxygen'], "ligand and e. O")
     cmd.color(options["colors"]['nitrogen'], "ligand and e. N")
 
@@ -202,7 +215,7 @@ def create_selections(options):
     cmd.color(options["colors"]['oxygen'], "binding_site and e. O")
 
     # get polar interacting residues in binding site
-    pairs = polarpairs("binding_site", "ligand", cutoff=4.0, name="polar_interaction_distance")
+    pairs = polarpairs("binding_site", "ligand", cutoff=options['binding_site_radius'], name="polar_interaction_distance")
     cmd.hide("labels", "polar_interaction_distance")
     cmd.color(options['colors']["interaction_polar"], "polar_interaction_distance")
     # print "pairs = " , pairs
@@ -252,15 +265,20 @@ def create_selections(options):
 
 
     #TODO create selection for HOH molecules in binding pocket and make nb_spheres
-    # other polar interactions
     # cmd.distance("interaction_polar", "sele_interacting_HIS350", "sele_interacting_HOH4025", mode=2)
     # additional hbb to water in pocket
 
 
+    # TODO check for angles and distances, otherwise do not show
     # Halogen Bond
+    #TODO do for all halogens
     # cmd.select("sele_chlorine", "e. Cl and ligand")
-    # cmd.distance("interaction_halogen_bond_distance", "sele_chlorine", "sele_interacting_ALA110 and n. O")	############
-    # cmd.angle("interaction_halogen_bond_angle", "neighbor sele_chlorine", "sele_chlorine", "sele_interacting_ALA110 and n. O")
+
+    # distance = cmd.distance("interaction_halogen_bond_distance", "sele_chlorine", "sele_interacting_ALA110 and n. O")	############
+    # angle = cmd.angle("interaction_halogen_bond_angle", "neighbor sele_chlorine", "sele_chlorine", "sele_interacting_ALA110 and n. O")
+    # TODO angle distance check, if angle >160 and distance up to 4.5
+    # TODO angle distance check, if angle 150-160 and distance up to 4
+    # TODO else don't show
     # cmd.color("gold", "interaction_halogen_bond_distance")
     # cmd.color("gold", "interaction_halogen_bond_angle")
     # cmd.hide("labels")
@@ -268,13 +286,6 @@ def create_selections(options):
 
     # Add more interactions using names such as "interaction_halogen_bond" or "inteteraction_CH_pi"
 
-def get_polar_interacting_residues(sel1="ligand", sel2="binding_site"):
-    # m1 = cmd.get_model(sel1 + " around 5.0 and " + sel2)
-
-    # get all oxygen or nitrogen atoms in the ligand
-    # check for proton acceptor / donator in radius of 5 A
-    #
-    return
 
 def do_it():
     # run all script components
@@ -358,7 +369,7 @@ def create_views(options):
     cmd.enable("ligand")
     cmd.enable("protein_cartoon")
     cmd.orient("ligand")
-    cmd.zoom("binding_site", 2)
+    cmd.zoom("binding_site", 5)
     cmd.view("5", action="store")
     cmd.scene("F5", action="store")
 
@@ -370,7 +381,7 @@ def create_views(options):
     cmd.enable("polar_interaction_distance")
     # cmd.enable("interaction_polar")
     # cmd.zoom("interacting_residues", 2)
-    cmd.zoom("polar_interacting_residues", 2)
+    cmd.zoom("polar_interacting_residues", 5)
     #cmd.set_view("""\
     #                 -0.652670681,   -0.733961642,    0.187926084,\
     #                  0.654971540,   -0.671278477,   -0.346988708,\
@@ -406,6 +417,9 @@ def create_views(options):
     cmd.viewport(500, 500)
 
 
+# TODO dont turn around z-axis
+# TODO set cartoon transparency to 0
+# TODO save movie commands to external file
 '''
 #record the movie
 #run script with @script.txt

@@ -1,5 +1,5 @@
-<tool id="movie_maker_basic" name="Movie Maker Basic">
-  <description>produces a basic pymol session for the creation of a protein ligand interaction movie with PyMol</description>
+<tool id="movie_maker_basic" name="Movie Maker">
+  <description>produces a PyMol session for the creation of a protein ligand interaction movie</description>
     <!-- Show Error messages in right sidebar -->
     <stdio>
         <!-- Anything other than zero is an error -->
@@ -29,8 +29,10 @@
 
         #if $advanced_options.advanced_mode == "advanced":
             '$advanced_options.binding_site_radius.selection'
-        #else:
-            'selection is No'
+            '$advanced_options.check_halogen_interaction'
+            '$advanced_options.water_in_binding_site'
+            '$advanced_options.color_carbon'
+            '$advanced_options.session_export_version'
         #end if
 
         > /home/webservices/philipp/shell_log.log
@@ -59,19 +61,21 @@
         <when value="advanced">
             <conditional name="binding_site_radius">
                 <param name="selection" type="select" label="Define size of binding pocket">
-                    <option value="4.0">4.0 A</option>
+                    <option value="4.0" selected="True">4.0 A</option>
                     <option value="4.5">4.5 A</option>
-                    <option value="5.0" selected="True">5.0 A</option>
+                    <option value="5.0">5.0 A</option>
                     <option value="5.5">5.5 A</option>
                     <option value="6.0">6.0 A</option>
                 </param>
             </conditional>
-            <param name="check_halogen_interaction" type="boolean" checked="false"
+            <param name="check_halogen_interaction" type="boolean" checked="true"
                    label="Display possible halogen interaction in binding site?"
+                   selected="True"
                    truevalue="Yes" falsevalue="No">
             </param>
-            <param name="water_in_binding_site" type="boolean" checked="false"
+            <param name="water_in_binding_site" type="boolean" checked="true"
                    label="Display water in binding site?"
+                   selected="True"
                    truevalue="Yes" falsevalue="No">
             </param>
             <param name="color_carbon" type="select" label="Color of ligand backbone">
