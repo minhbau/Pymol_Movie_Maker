@@ -66,10 +66,10 @@ def polartuples(the_polarpairs, residue_name='polar_interaction'):
     '''
     polar_resn_tuples = []
     polar_resn_tuple_set = set([])
-    #we are only interested in the residues in the binding site, polarpairs returns pairs
+    # we are only interested in the residues in the binding site, polarpairs returns pairs
     pairs = list(set([p[0] for p in the_polarpairs]))  # remove duplicate entries
     for i, p in enumerate(pairs):
-        #create the object for our visualization
+        # create the object for our visualization
         pair_name = residue_name + '_%s' % (i,)
         sele_pair_name = "sele_" + residue_name + '_%s' % (i,)
         cmd.select(sele_pair_name, "(%s`%s)" % p)
@@ -86,7 +86,7 @@ def polartuples(the_polarpairs, residue_name='polar_interaction'):
             if a_tuple not in polar_resn_tuple_set:
                 polar_resn_tuples.append(a_tuple)
                 polar_resn_tuple_set.add(a_tuple)
-                print a_tuple
+                # print a_tuple
                 break
         # print p, 'Distance: %.2f' % (dist)
 

@@ -16,6 +16,9 @@ POLAR_INTERACTIONS_FILENAME = os.environ.get('POLAR_INTERACTION_FILENAME')
 #SESSION_VERSION = round(float(argv[4]),2)
 SESSION_VERSION = 1.2
 SESSION_NAME = "basic_movie.pse"
+
+#TODO Decision between basic and advanced depends on number of arguments
+NUMBER_OF_ARGUMENTS = 7
 NUMBER_OF_ARGUMENTS = 7
 
 cmd.reinitialize()
@@ -58,7 +61,9 @@ def parse_commandline_options():
     # if len(argv) < NUMBER_OF_ARGUMENTS:
     #     raise ArgumentError("Not enough arguments supplied, only got %s, expected %s" % (len(argv), NUMBER_OF_ARGUMENTS))
 
-    # resi = argv[3]
+    # __init__ path = argv[0]
+    # input file path = argv[1]
+    # ligand_name = argv[2]
     ligand_name = argv[3]
     chain_name = argv[4]
     color_blind_friendly = argv[5]
@@ -68,7 +73,7 @@ def parse_commandline_options():
     # if str(resi).upper() not in valid_amino_acid_3letter_codes:
     #     raise ArgumentError("Not a valid three letter amino acid code supplied.")
 
-    #TODO create standard case in which no ligand name is required
+    #TODO ? create standard case in which no ligand name is required
     options["ligand_name"] = ligand_name
     options["chain_name"] = chain_name
 
@@ -220,7 +225,7 @@ def create_selections(options):
     #create a list with selection names of polar_interacting residues
     polar_selection_names = ["resi %s and resn %s and chain %s" % tup for tup in interacting_tuples]
 
-    #write the residues into a custom text file,
+    # write the residues into a custom text file,
     with open("%s" % (POLAR_INTERACTIONS_FILENAME, ), "w") as f:
         f.write("#POLAR INTERACTION PARTNERS WITH %s\n" % (options['ligand_name'],))
         f.write("RESI\tRESN\tCHAIN\n")

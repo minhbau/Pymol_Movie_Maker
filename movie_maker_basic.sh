@@ -18,13 +18,6 @@ export PYTHONPATH="/home/webservices/philipp/special_pymol/modules:${MOVIEMAKERP
 #used in pymolscript to save a seccond output
 export POLAR_INTERACTION_FILENAME="polar_interaction_partners.txt"
 
-echo $POLAR_INTERACTION_FILENAME
-
-arr=$(echo $5 | sed -e 's/\(.*\)\/.*/\1\//')
-
-#path+="/xbscore_output_pdf.py"
-echo ${arr}
-
 #echo "working on $MOVIEMAKERPATH"
 #echo "executing $MOVIEMAKERPATH""movie_maker_basic.py"
 /home/webservices/philipp/special_pymol/pymol -c -u $MOVIEMAKERPATH"movie_maker_basic.py" -- $1 $2 $2 $3 $4 $5 $galaxy > /home/webservices/philipp/movie_maker_basic.log

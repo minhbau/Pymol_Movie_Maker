@@ -1,6 +1,27 @@
 <tool id="movie_maker_basic" name="Movie Maker Basic">
   <description>produces a basic pymol session for the creation of a protein ligand interaction movie with PyMol</description>
-  <command interpreter="bash">movie_maker_basic.sh $input $residue_name $chain $colorblind_save.selection $output $output2</command>
+  <!-- <command interpreter="bash">movie_maker_basic.sh '$input' '$residue_name' '$chain' '$colorblind_save.selection' '$output' '$output2'</command> -->
+  <!-- use cheetah for interpretation and decision making on variables instead of just bash -->
+    <stdio>
+        <!-- Anything other than zero is an error -->
+        <exit_code range="1:" />
+        <exit_code range=":-1" />
+        <!-- In case the return code has not been set propery check stderr too -->
+        <regex match="Error:" />
+        <regex match="Exception:" />
+    </stdio>
+    <command>
+      <![CDATA[
+        bash /home/webservices/galaxy_project/galaxy-dist/tools/customTools/movie_maker/movie_maker_basic.sh
+        '$input'
+        '$residue_name'
+        '$chain'
+        '$colorblind_save.selection'
+        '$output'
+        '$output2'
+        > /home/webservices/philipp/shell_log.log
+        ]]>
+  </command>
   <inputs>
     <param format="pdb" name="input" type="data" label="Source file"/>
     <param format="text" name="residue_name" size="3" type="text" label="Insert 3 letter ligand residue name">
