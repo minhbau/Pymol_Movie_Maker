@@ -1,7 +1,6 @@
 <tool id="movie_maker_basic" name="Movie Maker Basic">
   <description>produces a basic pymol session for the creation of a protein ligand interaction movie with PyMol</description>
-  <!-- <command interpreter="bash">movie_maker_basic.sh '$input' '$residue_name' '$chain' '$colorblind_save.selection' '$output' '$output2'</command> -->
-  <!-- use cheetah for interpretation and decision making on variables instead of just bash -->
+    <!-- Show Error messages in right sidebar -->
     <stdio>
         <!-- Anything other than zero is an error -->
         <exit_code range="1:" />
@@ -10,6 +9,8 @@
         <regex match="Error:" />
         <regex match="Exception:" />
     </stdio>
+    <!-- old command structure: <command interpreter="bash">movie_maker_basic.sh '$input' '$residue_name' '$chain' '$colorblind_save.selection' '$output' '$output2'</command> -->
+    <!-- use cheetah template engine for interpretation and decision making on variables instead of just bash -->
     <command>
       <![CDATA[
         bash /home/webservices/galaxy_project/galaxy-dist/tools/customTools/movie_maker/movie_maker_basic.sh

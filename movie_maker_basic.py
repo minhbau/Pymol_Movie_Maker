@@ -1,11 +1,11 @@
-from argparse import ArgumentError
-
 from pymol import cmd
+import argparse  # library for parsing commandline parameters
 from sys import argv
 import os
 from string import ascii_uppercase
-# methods are only available over cmd.do when not importing, this makes passing of variables complicated
-# we rely on the correct setting of the PYTHONPATH environment variable,
+# methods are only available over cmd.do when not importing polar_pairs
+#   , this makes passing of variables complicated
+#   we rely on the correct setting of the PYTHONPATH environment variable,
 #   to include the directory in which polar_pairs.py resides
 from polar_pairs import polarpairs, polartuples
 
@@ -13,32 +13,14 @@ from polar_pairs import polarpairs, polartuples
 #PATH TO CURRENT DIRECTORY
 MOVIE_MAKER_PATH = os.environ.get('MOVIEMAKERPATH')
 POLAR_INTERACTIONS_FILENAME = os.environ.get('POLAR_INTERACTION_FILENAME')
-#SESSION_VERSION = round(float(argv[4]),2)
+
 SESSION_VERSION = 1.2
 SESSION_NAME = "basic_movie.pse"
 
-#TODO Decision between basic and advanced depends on number of arguments
-NUMBER_OF_ARGUMENTS = 7
-NUMBER_OF_ARGUMENTS = 7
-
 cmd.reinitialize()
-
 
 #set session_export to be of desired version 
 cmd.set("pse_export_version", SESSION_VERSION)
-
-# load pdb file (first argument)
-#renaming the *.dat file to *.pdb, loading with pymol and renaming for galaxy
-os.rename(argv[1], argv[1].split(".")[0]+".pdb")
-cmd.load(argv[1].split(".")[0]+".pdb")
-os.rename(argv[1].split(".")[0]+".pdb", argv[1])
-
-# Parse commandline arguments
-
-PDB_NAME = argv[1].split(".")[0]
-PDB_FILENAME = PDB_NAME + ".pdb"
-
-print("loading %s"% (PDB_FILENAME,))
 
 # movie_fade available at https://raw.githubusercontent.com/Pymol-Scripts/Pymol-script-repo/master/movie_fade.py
 cmd.do("run %sfade_movie.py"% (MOVIE_MAKER_PATH, ))
@@ -48,40 +30,44 @@ cmd.do("run %spolar_pairs.py"% (MOVIE_MAKER_PATH, ))
 valid_amino_acid_3letter_codes = set("ALA CYS ASP GLU PHE GLY HIS ILE LYS LEU MET ASN PRO GLN ARG SER THR VAL TRP TYR WAT SUL HEM".split(" "))
 
 def parse_commandline_options():
-    options = {}
 
     # passed filename is first passed argument, but flags are also in argv
     print("python file loaded")
     for i, ele in enumerate(argv):
         print("argv[%s]" % i, ele)
 
+    parser = argparse.ArgumentParser(description="Trying to parse some named parameters from shellscript")
+    parser.add_argument("-i", "--input", required=True)
+    parser.add_argument("--ligand_name", required=True)
+    parser.add_argument("--chain_name", required=True)
+    parser.add_argument("--color_blind_friendly", default=True)
+    # parser.add_argument("--", required=True)
+    args = parser.parse_args()
+    options = vars(args)  # put variables into dictionary
+    if args.input:
+        if os.path.exists(args.input):
+            print("Made it, got %s" % args.input)
+            input = args.input
+            # Parse commandline arguments
+            PDB_NAME = input.split(".")[0]
+            PDB_FILENAME = PDB_NAME + ".pdb"
+
+    if args.color_blind_friendly:
+        if args.color_blind_friendly == "No":
+            options["color_blind_friendly"] = False
+        else:
+            options["color_blind_friendly"] = True
+
+
+    # load pdb file (first argument)
+    # renaming the *.dat file to *.pdb, loading with pymol and renaming for galaxy
+    os.rename(input, PDB_FILENAME)
+    cmd.load(PDB_FILENAME)
+    os.rename(PDB_FILENAME, input)
+
     #command line parameters are pdb-name, ligand_name, chain_name, output_filepath
     # session_version?
 
-    # if len(argv) < NUMBER_OF_ARGUMENTS:
-    #     raise ArgumentError("Not enough arguments supplied, only got %s, expected %s" % (len(argv), NUMBER_OF_ARGUMENTS))
-
-    # __init__ path = argv[0]
-    # input file path = argv[1]
-    # ligand_name = argv[2]
-    ligand_name = argv[3]
-    chain_name = argv[4]
-    color_blind_friendly = argv[5]
-
-
-    # Check whether we have a valid amino acid 3 letter code
-    # if str(resi).upper() not in valid_amino_acid_3letter_codes:
-    #     raise ArgumentError("Not a valid three letter amino acid code supplied.")
-
-    #TODO ? create standard case in which no ligand name is required
-    options["ligand_name"] = ligand_name
-    options["chain_name"] = chain_name
-
-    options["color_blind_friendly"] = True
-    if color_blind_friendly == "No":
-        options["color_blind_friendly"] = False
-    # options["path"] = path
-    #output directory is managed by shellscript
     return options
 
 

@@ -20,7 +20,7 @@ export POLAR_INTERACTION_FILENAME="polar_interaction_partners.txt"
 
 #echo "working on $MOVIEMAKERPATH"
 #echo "executing $MOVIEMAKERPATH""movie_maker_basic.py"
-/home/webservices/philipp/special_pymol/pymol -c -u $MOVIEMAKERPATH"movie_maker_basic.py" -- $1 $2 $2 $3 $4 $5 $galaxy > /home/webservices/philipp/movie_maker_basic.log
+/home/webservices/philipp/special_pymol/pymol -c -u $MOVIEMAKERPATH"movie_maker_basic.py" --input "$1" --ligand_name $2 --chain_name $3 --color_blind_friendly $4 > /home/webservices/philipp/movie_maker_basic.log
 
 # move created pymol session from current directory to output directory
 mv basic_movie.pse $5
