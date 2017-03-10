@@ -126,7 +126,7 @@ def apply_color_switch(color_blind_save_selected):
 
 def apply_settings(cmd_options):
     
-    settings_dict = {}
+    settings_dict = cmd_options.copy()
     # BG Color is white
     cmd.bg_color('white')
     
@@ -153,14 +153,17 @@ def create_selections(options):
     cmd.select("protein_structure", "all")
 
     # Ligand
-    number_of_ligands_selected = cmd.select("sele_ligand", "organic and chain %s and resn %s" % (options['chain_name'], options["ligand_name"]))
+    number_of_ligands_selected_all = cmd.select("sele_all_ligands", "organic and chain %s and resn %s" % (options['chain_name'], options["ligand_name"]))
+    number_of_ligands_selected = cmd.select("sele_ligand", 'organic and chain %s and resn %s and alt a+""' % (options['chain_name'], options["ligand_name"]))
+    # remove all duplicate conformations
+    cmd.remove("sele_all_ligands and not sele_ligand")
 
     #Feature: If we did not get a correct chain name from the user, we will try to guess through the whole alphabet to find it
     # otherwise the ligand will not appear in the visualization
     if not number_of_ligands_selected:
         #list holding all ascii-letters
         for letter in ascii_uppercase:
-            number_of_ligands_selected = cmd.select("sele_ligand", "organic and chain %s and resn %s" % (letter, options["ligand_name"]))
+            number_of_ligands_selected = cmd.select("sele_ligand", 'organic and chain %s and resn %s and alt a+""' % (letter, options["ligand_name"]))
             if number_of_ligands_selected:
                 break
 
@@ -216,11 +219,15 @@ def create_selections(options):
 
     # get polar interacting residues in binding site
     pairs = polarpairs("binding_site", "ligand", cutoff=options['binding_site_radius'], name="polar_interaction_distance")
-    cmd.hide("labels", "polar_interaction_distance")
-    cmd.color(options['colors']["interaction_polar"], "polar_interaction_distance")
+    if pairs:
+        cmd.hide("labels", "polar_interaction_distance")
+        cmd.color(options['colors']["interaction_polar"], "polar_interaction_distance")
+    else:
+        print("No polar interaction pairs found")
+        options["no_polar_interactions_found"] = True
+
     # print "pairs = " , pairs
     interacting_tuples = polartuples(pairs, residue_name="polar_interaction")
-
 
     #create a list with selection names of polar_interacting residues
     polar_selection_names = ["resi %s and resn %s and chain %s" % tup for tup in interacting_tuples]
@@ -241,22 +248,15 @@ def create_selections(options):
         else:
             cmd.select("sele_polar_interacting_residues", selection_name)
             print("select sele_polar_interacting_residues, %s" % selection_name)
-    cmd.create("polar_interacting_residues", "sele_polar_interacting_residues")
-    # cmd.delete("sele_polar_interacting_residues")
 
-    cmd.show("sticks", "polar_interacting_residues")
-    cmd.color("grey50", "polar_interacting_residues and e. C")
-    cmd.color(options["colors"]['nitrogen'], "polar_interacting_residues and e. N")
-    cmd.color(options["colors"]['oxygen'], "polar_interacting_residues and e. O")
+    if not options.has_key("no_polar_interactions_found"):
+        cmd.create("polar_interacting_residues", "sele_polar_interacting_residues")
+        cmd.delete("sele_polar_interacting_residues")
 
-    # cmd.select("interacting_residues", "sele_binding_site")
-    # cmd.create("interacting_residues", "sele_binding_site and resi %s" % (resi_or_string))
-    # cmd.create("non_interacting_residues", "sele_binding_site and not resi %s" % (non_resi_string))
-    # cmd.show("sticks", 'non_interacting_residues')
-    # cmd.hide('non_interacting_residues')
-    # cmd.hide('binding_site')
-    # cmd.color('lightblue','interacting_residues')
-
+        cmd.show("sticks", "polar_interacting_residues")
+        cmd.color("grey50", "polar_interacting_residues and e. C")
+        cmd.color(options["colors"]['nitrogen'], "polar_interacting_residues and e. N")
+        cmd.color(options["colors"]['oxygen'], "polar_interacting_residues and e. O")
 
     # old way Polar contacts
     # cmd.distance("interaction_polar", "ligand", "binding_site", mode=2)
@@ -264,27 +264,83 @@ def create_selections(options):
     # cmd.color(options['colors']["interaction_polar"], "interaction_polar")
 
 
-    #TODO create selection for HOH molecules in binding pocket and make nb_spheres
-    # cmd.distance("interaction_polar", "sele_interacting_HIS350", "sele_interacting_HOH4025", mode=2)
-    # additional hbb to water in pocket
+    # create selection for HOH molecules in binding pocket and make nb_spheres
+    if options['water_in_binding_site']:
+        number_of_water = cmd.select("sele_water_binding_site", "binding_site and resn hoh")
+        if number_of_water:
+            cmd.create("water_binding_site", "sele_water_binding_site and resn hoh")
+            cmd.show("nb_spheres", "water_binding_site")
+        cmd.delete("sele_water_binding_site")
 
 
-    # TODO check for angles and distances, otherwise do not show
     # Halogen Bond
-    #TODO do for all halogens
-    # cmd.select("sele_chlorine", "e. Cl and ligand")
+    if options['check_halogen_interaction']:
+        halogen_bond_selections = []
+        halogen_interaction_partners = []
+        for halogen in ["Cl", "Br", "I"]:
+            number_of_halogen = cmd.select("sele_%s_interaction" % halogen, "ligand and e. %s" % halogen)
+            print("We have %s %s atoms in our ligand" % (number_of_halogen, halogen))
+            if number_of_halogen:
 
-    # distance = cmd.distance("interaction_halogen_bond_distance", "sele_chlorine", "sele_interacting_ALA110 and n. O")	############
-    # angle = cmd.angle("interaction_halogen_bond_angle", "neighbor sele_chlorine", "sele_chlorine", "sele_interacting_ALA110 and n. O")
-    # TODO angle distance check, if angle >160 and distance up to 4.5
-    # TODO angle distance check, if angle 150-160 and distance up to 4
-    # TODO else don't show
-    # cmd.color("gold", "interaction_halogen_bond_distance")
-    # cmd.color("gold", "interaction_halogen_bond_angle")
-    # cmd.hide("labels")
+                # cmd.create("%s_interaction" % halogen, "sele_%s_interaction" % halogen)
+                cmd.select("sele_candidates",
+                           "sele_%s_interaction expand 4.5" %halogen)
+                cmd.select("sele_candidates",
+                           "sele_candidates and (e. O or e. S)")
+                number_of_candidates = cmd.select("sele_candidates",
+                           "sele_candidates and binding_site and not ligand")
 
+                print("We have %s potential candidates for %s bonds" % (number_of_candidates, halogen))
+                if number_of_candidates:
+                    # TODO if angle ~160 and distance up to 4.5
+                    # TODO if angle 150-160 and distance up to 4
+                    candidate_model = cmd.get_model("sele_candidates")
+                    for atom in candidate_model.atom:
+                        print("Candidate from model = %s %s" % (atom.resn, atom.index))
 
-    # Add more interactions using names such as "interaction_halogen_bond" or "inteteraction_CH_pi"
+                    cmd.select("sele_halo", "ligand and e. %s" % halogen)
+                    model_br = cmd.get_model("sele_halo")
+                    candidate_model = cmd.get_model("sele_candidates")
+                    for i, atom in enumerate(model_br.atom):
+                        # print("i= %s" % i)
+                        sele_halo = cmd.select("sele_halo%s" % i, "id %s and ligand" % atom.id)
+                        # model_sele_halo = cmd.get_model("sele_halo%s" % i)
+                        sele_halo_c = cmd.select("sele_halo%s_c" % i, "neighbor sele_halo%s" % i)
+                        # print("sele_halo %s" % sele_halo, "sele_halo_c %s" % sele_halo_c)
+                        for j, oxygen_or_sulfur in enumerate(candidate_model.atom):
+                            cmd.select("ox_or_sulf_%s" %j, "id %s and binding_site" % oxygen_or_sulfur.id)
+                            distance = cmd.distance("halogen_bond_%s_%s_%s" % (halogen, i, j), "sele_halo%s" % i, "ox_or_sulf_%s" % j)
+                            angle = cmd.angle("halogen_bond_angle_%s_%s_%s" % (halogen, i, j), "sele_halo%s_c" % i , "sele_halo%s" % i, "ox_or_sulf_%s" % j)
+                            print("Distance = %s, angle = %s" % (distance, angle))
+                            if (distance <= 4.5 and angle >= 160.0) or (distance <= 4.0 and angle >= 150.0):
+                                print("We have a halogen bond: halogen_bond_angle_%s_%s_%s" % (halogen, i, j))
+                                cmd.hide("label", "halogen_bond_%s_%s_%s" % (halogen, i, j))
+                                cmd.hide("label", "halogen_bond_angle_%s_%s_%s" % (halogen, i, j))
+                                cmd.color("cb_yellow", "halogen_bond_%s_%s_%s" % (halogen, i, j))
+                                cmd.color("cb_yellow", "halogen_bond_angle_%s_%s_%s" % (halogen, i, j))
+                                #halogen_bond_selections.append("halogen_bond_%s_%s_%s" % (halogen, i, j))
+                                halogen_bond_selections.append("halogen_bond_angle_%s_%s_%s" % (halogen, i, j))
+                                cmd.create("halogen_interaction_partner%s"%i, "br. ox_or_sulf_%s" %j)
+                                halogen_interaction_partners.append("halogen_interaction_partner%s"%i)
+                            else:
+                                print("No halogen bond, deleting selection!\n")
+                                cmd.delete("halogen_bond_angle_%s_%s_%s" % (halogen, i, j))
+                            # always delete bond, angle is enough
+                            cmd.delete("halogen_bond_%s_%s_%s" % (halogen, i, j))
+                            cmd.delete("ox_or_sulf_%s" %j)
+                        #cleanup selections
+                        cmd.delete("sele_halo%s" % i)
+                        cmd.delete("sele_halo%s_c" % i)
+                        cmd.delete("sele_halo%s_c" % i)
+                        cmd.delete("sele_candidates")
+            cmd.delete("sele_%s_interaction" % halogen)
+
+        # check whether we found any halogen bond interactions
+        # if halogen_bond_selections has more than one element, it will
+        #   evaluate as true, if empty it will be false
+        options['halogen_bond_selections'] = halogen_bond_selections
+        options['halogen_interaction_partners'] = halogen_interaction_partners
+
 
 
 def do_it():
@@ -299,33 +355,28 @@ def do_it():
     cmd.save("basic_movie.pse")
 
 
-
-def print_binding_site_residues():
-    # print all binding site residues with residue numbers
-    model_binding_site = cmd.get_model("binding_site")
-    my_resns_set = set([])
-    my_resns = []
-    for resid in model_binding_site.atom:
-        a_tuple = (resid.resn, resid.resi)
-        resn, resi = a_tuple
-        if a_tuple not in my_resns_set:
-            my_resns_set.add(a_tuple)
-            #print a_tuple
-            #print('cmd.select("sele_interacting_%s%s", "sele_binding_site and resi %s")' % (resn,resi,resi))
-            my_resns.append(a_tuple)
-    return my_resns
-
-# resn_tuples = print_binding_site_residues()
-
-#cmd.select("sele_interacting_ALA110", "sele_binding_site and resi 110")
-#cmd.select("sele_interacting_THR111", "sele_binding_site and resi 111")
-#cmd.select("sele_interacting_PHE227", "sele_binding_site and resi 227")
-#cmd.select("sele_interacting_ASN324", "sele_binding_site and resi 324")
-#cmd.select("sele_interacting_HIS350", "sele_binding_site and resi 350")
-#cmd.select("sele_interacting_HOH4025", "sele_binding_site and resi 4025")
+#
+# def print_binding_site_residues():
+#     # print all binding site residues with residue numbers
+#     model_binding_site = cmd.get_model("binding_site")
+#     my_resns_set = set([])
+#     my_resns = []
+#     for resid in model_binding_site.atom:
+#         a_tuple = (resid.resn, resid.resi)
+#         resn, resi = a_tuple
+#         if a_tuple not in my_resns_set:
+#             my_resns_set.add(a_tuple)
+#             #print a_tuple
+#             #print('cmd.select("sele_interacting_%s%s", "sele_binding_site and resi %s")' % (resn,resi,resi))
+#             my_resns.append(a_tuple)
+#     return my_resns
 
 
 def create_views(options):
+
+    polar_interactions_defined = not options.has_key("no_polar_interactions_found")
+    print ("polar_interactions_defined" , polar_interactions_defined)
+    halogen_bonds_defined = options['check_halogen_interaction'] and options['halogen_bond_selections']
 
     cmd.disable("all")
     cmd.orient("protein_surface")
@@ -377,11 +428,13 @@ def create_views(options):
     cmd.disable("all")
     cmd.enable("ligand")
     cmd.enable("binding_site")
-    cmd.enable("polar_interacting_residues")
-    cmd.enable("polar_interaction_distance")
-    # cmd.enable("interaction_polar")
-    # cmd.zoom("interacting_residues", 2)
-    cmd.zoom("polar_interacting_residues", 5)
+
+    if polar_interactions_defined:
+        cmd.enable("polar_interacting_residues")
+        cmd.enable("polar_interaction_distance")
+        cmd.zoom("polar_interacting_residues", 5)
+    else:
+        cmd.zoom("binding_site", 5)
     #cmd.set_view("""\
     #                 -0.652670681,   -0.733961642,    0.187926084,\
     #                  0.654971540,   -0.671278477,   -0.346988708,\
@@ -396,10 +449,33 @@ def create_views(options):
     cmd.disable("all")
     cmd.enable("ligand")
     # cmd.enable("binding_site")
-    cmd.enable("polar_interacting_residues")
-    cmd.enable("polar_interaction_distance")
-    cmd.enable("interaction_polar")
-    cmd.zoom("polar_interaction_distance", 2)
+    if polar_interactions_defined:
+        cmd.enable("polar_interacting_residues")
+        cmd.enable("polar_interaction_distance")
+        cmd.enable("interaction_polar")
+        cmd.zoom("polar_interaction_distance", 5)
+    else:
+        cmd.zoom("ligand", 5)
+    cmd.view("7", action="store")
+    cmd.scene("F7", action="store")
+
+    # 8 and F8
+    cmd.disable("all")
+    cmd.enable("ligand")
+    if halogen_bonds_defined:
+        for selection in options['halogen_bond_selections']:
+            cmd.enable(selection)
+        for selection2 in options['halogen_interaction_partners']:
+            cmd.enable(selection2)
+        cmd.zoom(options['halogen_bond_selections'][0], 5)
+    else:
+        cmd.zoom("ligand", 5)
+    cmd.view("8", action="store")
+    cmd.scene("F8", action="store")
+
+    # 9 and F9
+    # zoom between polar interactions
+
     #TODO
     #cmd.enable("interaction_halogen_bond_distance")
     #cmd.enable("interaction_halogen_bond_angle")
@@ -412,8 +488,8 @@ def create_views(options):
     #         0.000000000,   -0.000000000,  -98.679916382,\
     #        51.064998627,    6.873000145,   55.061000824,\
     #        84.767715454,  112.592117310,  -20.000000000 """)
-    cmd.view("7", action="store")
-    cmd.scene("F7", action="store")
+    # cmd.view("7", action="store")
+    # cmd.scene("F7", action="store")
     cmd.viewport(500, 500)
 
 
