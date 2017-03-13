@@ -41,6 +41,8 @@ def parse_commandline_options():
     parser.add_argument("--water_in_binding_site", default=True)
     parser.add_argument("--color_carbon", type=str, default="yellow")
     parser.add_argument("--session_export_version", type=float, default=1.2)
+    parser.add_argument("--cofactor_name", type=str, default="")
+    parser.add_argument("--color_carbon_cofactor", type=str, default="orange")
     # parser.add_argument("--", required=True)
     args = parser.parse_args()
     options = vars(args)  # put variables into dictionary
@@ -82,9 +84,16 @@ def parse_commandline_options():
         allowed_versions = {1.2, 1.72, 1.76, 1.84}
         if args.session_export_version in allowed_versions:
             session_version = args.session_export_version
-
     # set session_export to be of desired version
     cmd.set("pse_export_version", session_version)
+
+    # --cofactor_name ${12} - -color_carbon_cofactor
+    if args.cofactor_name:
+        options['cofactor_in_binding_site'] = True
+        options['cofactor_name'] = args.cofactor_name
+        options['color_carbon_cofactor'] = args.color_carbon_cofactor
+    else:
+        options['cofactor_in_binding_site'] = False
 
     # load pdb file (first argument)
     # renaming the *.dat file to *.pdb, loading with pymol and renaming for galaxy
@@ -92,21 +101,30 @@ def parse_commandline_options():
     cmd.load(PDB_FILENAME)
     os.rename(PDB_FILENAME, input)
 
-    #command line parameters are pdb-name, ligand_name, chain_name, output_filepath
-    # session_version?
-
     return options
 
 
-def apply_color_switch(color_blind_save_selected):
+def apply_color_switch(commandline_options):
     color_dict = {}
+    color_blind_save_selected = commandline_options["color_blind_friendly"]
+    cofactor_selected = commandline_options['cofactor_in_binding_site']
+    if cofactor_selected:
+        cofactor_color = commandline_options['color_carbon_cofactor']
+
+    # import color settings
+    cmd.do("run %scolorblindfriendly.py" % MOVIE_MAKER_PATH)
 
     if color_blind_save_selected:
-        #import color settings
-        cmd.do("run %scolorblindfriendly.py" % MOVIE_MAKER_PATH)
         color_dict['protein_surface'] = "cb_sky_blue"
         color_dict['protein_cartoon'] = "cb_blue"
-        color_dict['cofactor'] = "cb_orange"
+        if cofactor_selected:
+            if cofactor_color in ["orange", "yellow"]:
+                # color_dict['cofactor'] = "cb_%s" % cofactor_color
+                color_dict['color_cofactor'] = "cb_%s" % cofactor_color
+                # commandline_options['color_cofactor'] = "cb_%s" % cofactor_color
+            else:
+                # color_dict['cofactor'] = "grey50"
+                color_dict['color_cofactor'] = "grey50"
         color_dict['binding_site'] = "grey50"
         color_dict['interaction_polar'] = "cb_blue"
         color_dict['oxygen'] = "cb_red"
@@ -115,7 +133,10 @@ def apply_color_switch(color_blind_save_selected):
     else:
         color_dict['protein_surface'] = "lightblue"
         color_dict['protein_cartoon'] = "skyblue"
-        color_dict['cofactor'] = "sand"
+        if cofactor_selected:
+            # color_dict['cofactor'] = cofactor_color
+            color_dict['color_cofactor'] = cofactor_color
+            # commandline_options['color_cofactor'] = cofactor_color
         color_dict['binding_site'] = "grey50"
         color_dict['interaction_polar'] = "blue"
         color_dict['oxygen'] = "red"
@@ -131,7 +152,7 @@ def apply_settings(cmd_options):
     cmd.bg_color('white')
     
     # Colors
-    color_dict = apply_color_switch(cmd_options["color_blind_friendly"])
+    color_dict = apply_color_switch(cmd_options)
     color_dict["color_carbon"] = cmd_options["color_carbon"]
 
     settings_dict["colors"] = color_dict
@@ -173,11 +194,14 @@ def create_selections(options):
     cmd.color(options["colors"]['oxygen'], "ligand and e. O")
     cmd.color(options["colors"]['nitrogen'], "ligand and e. N")
 
+
     # Cofactor
-    #cmd.select("sele_cofactor", "resn OLA")	#################################
-    #cmd.create("cofactor", "sele_cofactor")
-    #cmd.show("sticks", "cofactor")
-    #cmd.color(color_cofactor, "cofactor and e. C")
+    if options["cofactor_in_binding_site"]:
+        cmd.select("sele_cofactor", "resn %s" % options['cofactor_name'])
+        cmd.create("cofactor", "sele_cofactor")
+        cmd.show("sticks", "cofactor")
+        cmd.color(options['colors']['color_cofactor'], "cofactor and e. C")
+        # cmd.delete("sele_cofactor")
 
     # Surface
     cmd.create("protein_surface", "all")
@@ -272,7 +296,6 @@ def create_selections(options):
             cmd.show("nb_spheres", "water_binding_site")
         cmd.delete("sele_water_binding_site")
 
-
     # Halogen Bond
     if options['check_halogen_interaction']:
         halogen_bond_selections = []
@@ -292,8 +315,8 @@ def create_selections(options):
 
                 print("We have %s potential candidates for %s bonds" % (number_of_candidates, halogen))
                 if number_of_candidates:
-                    # TODO if angle ~160 and distance up to 4.5
-                    # TODO if angle 150-160 and distance up to 4
+                    # if angle ~160 and distance up to 4.5 A
+                    # if angle 150-160 and distance up to 4.0 A
                     candidate_model = cmd.get_model("sele_candidates")
                     for atom in candidate_model.atom:
                         print("Candidate from model = %s %s" % (atom.resn, atom.index))
@@ -380,9 +403,6 @@ def create_views(options):
 
     cmd.disable("all")
     cmd.orient("protein_surface")
-    #turn 90 degrees around x and z
-    #orient correctly, top accessible region
-    #cmd.turn("z", -90)
     cmd.zoom("protein_surface", 5)
     cmd.enable("protein_surface")
     cmd.set("transparency", 0.5)
@@ -419,6 +439,8 @@ def create_views(options):
     cmd.disable("all")
     cmd.enable("ligand")
     cmd.enable("protein_cartoon")
+    if options["cofactor_in_binding_site"]:
+        cmd.enable("cofactor")
     cmd.orient("ligand")
     cmd.zoom("binding_site", 5)
     cmd.view("5", action="store")
@@ -428,7 +450,8 @@ def create_views(options):
     cmd.disable("all")
     cmd.enable("ligand")
     cmd.enable("binding_site")
-
+    if options["cofactor_in_binding_site"]:
+        cmd.enable("cofactor")
     if polar_interactions_defined:
         cmd.enable("polar_interacting_residues")
         cmd.enable("polar_interaction_distance")
@@ -448,6 +471,8 @@ def create_views(options):
     # 7 and F7
     cmd.disable("all")
     cmd.enable("ligand")
+    if options["cofactor_in_binding_site"]:
+        cmd.enable("cofactor")
     # cmd.enable("binding_site")
     if polar_interactions_defined:
         cmd.enable("polar_interacting_residues")

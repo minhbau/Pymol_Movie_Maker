@@ -33,9 +33,12 @@
             '$advanced_options.water_in_binding_site'
             '$advanced_options.color_carbon'
             '$advanced_options.session_export_version'
-        #end if
 
-        > /home/webservices/philipp/shell_log.log
+            #if $advanced_options.cofactor_check.cofactor_in_binding_site:
+                '$advanced_options.cofactor_check.cofactor_name'
+                '$advanced_options.cofactor_check.color_carbon_cofactor'
+            #end if
+        #end if
         ]]>
   </command>
   <inputs>
@@ -78,6 +81,25 @@
                    selected="True"
                    truevalue="Yes" falsevalue="No">
             </param>
+            <conditional name="cofactor_check">
+                <param name="cofactor_in_binding_site" type="boolean" checked="true"
+                       label="Display cofactor in binding site?"
+                       selected="False"
+                       truevalue="Yes" falsevalue="No">
+                </param>
+                        <when value="Yes">
+                            <param format="text" name="cofactor_name" size="3" type="text" label="Insert 3 letter cofactor residue name">
+                                <validator type="regex" message="Wrong format! Please enter just 3 letters.">^[A-Z,a-z,0-9]{3}$</validator>
+                            </param>
+                            <param name="color_carbon_cofactor" type="select" label="Color of cofactor backbone">
+                                <option value="orange" selected="True">Orange</option>
+                                <option value="yellow">Yellow</option>
+                                <option value="grey">Grey</option>
+                            </param>
+                        </when>
+                        <when value="No"></when>
+            </conditional>
+
             <param name="color_carbon" type="select" label="Color of ligand backbone">
                 <option value="yellow">Yellow</option>
                 <option value="grey">Grey</option>
