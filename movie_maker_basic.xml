@@ -17,15 +17,24 @@
         #if $advanced_options.advanced_mode == "advanced":
             bash /home/webservices/galaxy_project/galaxy-dist/tools/customTools/movie_maker/movie_maker_advanced.sh
         #else:
-            bash /home/webservices/galaxy_project/galaxy-dist/tools/customTools/movie_maker/movie_maker_basic.sh
+            #if $advanced_options.advanced_mode == "super_basic":
+                bash /home/webservices/galaxy_project/galaxy-dist/tools/customTools/movie_maker/movie_maker_super_basic.sh
+            #else:
+                bash /home/webservices/galaxy_project/galaxy-dist/tools/customTools/movie_maker/movie_maker_basic.sh
+            #end if
         #end if
 
         '$input'
-        '$residue_name'
-        '$chain'
-        '$colorblind_save.selection'
+
+        #if ($advanced_options.advanced_mode == "advanced") or ($advanced_options.advanced_mode == "basic"):
+            '$advanced_options.residue_name'
+            '$advanced_options.chain'
+            '$advanced_options.colorblind_save.selection'
+        #end if
+
         '$output'
         '$output_polar_interaction_partners'
+        '$output_pymol_movie_script'
 
         #if $advanced_options.advanced_mode == "advanced":
             '$advanced_options.binding_site_radius.selection'
@@ -33,7 +42,7 @@
             '$advanced_options.water_in_binding_site'
             '$advanced_options.color_carbon'
             '$advanced_options.session_export_version'
-            '$output_pymol_movie_script'
+
             #if $advanced_options.cofactor_check.cofactor_in_binding_site:
                 '$advanced_options.cofactor_check.cofactor_name'
                 '$advanced_options.cofactor_check.color_carbon_cofactor'
@@ -44,25 +53,70 @@
   </command>
   <inputs>
     <param format="pdb" name="input" type="data" label="Source file"/>
-    <param format="text" name="residue_name" size="3" type="text" label="Insert 3 letter ligand residue name">
-        <validator type="regex" message="Wrong format! Please enter just 3 letters.">^[A-Z,a-z,0-9]{3}$</validator>
-    </param>
-    <param format="text" name="chain" size="1" type="text" label="Chain">
-        <validator type="regex" message="Wrong format! Please enter just 1 letter.">^[A-Z,a-z]{1}$</validator>
-    </param>
-    <conditional name="colorblind_save">
-        <param name="selection" type="select" label="Use colorblind save coloring">
-            <option value="Yes">Yes</option>
-            <option value="No">No</option>
-        </param>
-    </conditional>
+
     <conditional name="advanced_options" >
-        <param label="Use advanced options" name="advanced_mode" type="select">
-            <option selected="True" value="defaults">Use basic mode</option>
-            <option value="advanced">Use advanced mode</option>
-        </param>>
-        <when value="defaults"></when>
+    <param label="Use advanced options" name="advanced_mode" type="select">
+        <option value="super_basic">Use super basic mode</option>
+        <option selected="True" value="basic">Use basic mode</option>
+        <option value="advanced">Use advanced mode</option>
+    </param>>
+
+        <when value="super_basic"></when>
+        <when value="basic">
+            <param format="text" name="residue_name" size="3" type="text" label="Insert 3 letter ligand residue name">
+                <validator type="regex" message="Wrong format! Please enter just 3 letters.">^[A-Z,a-z,0-9]{3}$</validator>
+            </param>
+
+            <param format="text" name="chain" size="1" type="text" label="Chain">
+                <validator type="regex" message="Wrong format! Please enter just 1 letter.">^[A-Z,a-z]{1}$</validator>
+            </param>
+
+            <conditional name="colorblind_save">
+                <param name="selection" type="select" label="Use colorblind save coloring">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </param>
+            </conditional>
+            <param name="color_carbon" type="select" label="Color of ligand backbone">
+                <option value="yellow">Yellow</option>
+                <option value="grey">Grey</option>
+                <option value="orange">Orange</option>
+            </param>
+            <param name="session_export_version" type="select" label="Select target version for PyMol session">
+                <option value="1.2" selected="True">1.2 Legacy support (2009)</option>
+                <option value="1.72">1.72 Volumes support (2014)</option>
+                <option value="1.76">1.76 Scenes support (2015)</option>
+                <option value="1.84">1.84 Recent version (late 2016)</option>
+            </param>
+        </when>
+
+
         <when value="advanced">
+            <param format="text" name="residue_name" size="3" type="text" label="Insert 3 letter ligand residue name">
+                <validator type="regex" message="Wrong format! Please enter just 3 letters.">^[A-Z,a-z,0-9]{3}$</validator>
+            </param>
+
+            <param format="text" name="chain" size="1" type="text" label="Chain">
+                <validator type="regex" message="Wrong format! Please enter just 1 letter.">^[A-Z,a-z]{1}$</validator>
+            </param>
+
+            <conditional name="colorblind_save">
+                <param name="selection" type="select" label="Use colorblind save coloring">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </param>
+            </conditional>
+            <param name="color_carbon" type="select" label="Color of ligand backbone">
+                <option value="yellow">Yellow</option>
+                <option value="grey">Grey</option>
+                <option value="orange">Orange</option>
+            </param>
+            <param name="session_export_version" type="select" label="Select target version for PyMol session">
+                <option value="1.2" selected="True">1.2 Legacy support (2009)</option>
+                <option value="1.72">1.72 Volumes support (2014)</option>
+                <option value="1.76">1.76 Scenes support (2015)</option>
+                <option value="1.84">1.84 Recent version (late 2016)</option>
+            </param>
             <conditional name="binding_site_radius">
                 <param name="selection" type="select" label="Define size of binding pocket">
                     <option value="4.0" selected="True">4.0 A</option>
@@ -88,30 +142,18 @@
                        selected="False"
                        truevalue="Yes" falsevalue="No">
                 </param>
-                        <when value="Yes">
-                            <param format="text" name="cofactor_name" size="3" type="text" label="Insert 3 letter cofactor residue name">
-                                <validator type="regex" message="Wrong format! Please enter just 3 letters.">^[A-Z,a-z,0-9]{3}$</validator>
-                            </param>
-                            <param name="color_carbon_cofactor" type="select" label="Color of cofactor backbone">
-                                <option value="orange" selected="True">Orange</option>
-                                <option value="yellow">Yellow</option>
-                                <option value="grey">Grey</option>
-                            </param>
-                        </when>
-                        <when value="No"></when>
+                <when value="Yes">
+                    <param format="text" name="cofactor_name" size="3" type="text" label="Insert 3 letter cofactor residue name">
+                        <validator type="regex" message="Wrong format! Please enter just 3 letters.">^[A-Z,a-z,0-9]{3}$</validator>
+                    </param>
+                    <param name="color_carbon_cofactor" type="select" label="Color of cofactor backbone">
+                        <option value="orange" selected="True">Orange</option>
+                        <option value="yellow">Yellow</option>
+                        <option value="grey">Grey</option>
+                    </param>
+                </when>
+                <when value="No"></when>
             </conditional>
-
-            <param name="color_carbon" type="select" label="Color of ligand backbone">
-                <option value="yellow">Yellow</option>
-                <option value="grey">Grey</option>
-                <option value="orange">Orange</option>
-            </param>
-            <param name="session_export_version" type="select" label="Select target version for PyMol session">
-                <option value="1.2" selected="True">1.2 Legacy support (2009)</option>
-                <option value="1.72">1.72 Volumes support (2014)</option>
-                <option value="1.76">1.76 Scenes support (2015)</option>
-                <option value="1.84">1.84 Recent version (late 2016)</option>
-            </param>
         </when>
     </conditional>
   </inputs>

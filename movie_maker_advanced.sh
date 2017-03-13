@@ -6,6 +6,7 @@
 #echo $4  # use colorblind friendly coloring?
 #echo $5  # path pse file
 #echo $6  # path pymol-script file
+# TODO $7 changed
 #echo $7  # binding_site_radius
 #echo $8  # check_halogen_interaction
 #echo $9  # water_in_binding_site
@@ -37,16 +38,16 @@ export MOVIE_SCRIPT_FILENAME="movie_maker_basic_script.pml"
 #check number of passed arguments, if we have 12, we have no cofactor, if 14 cofactor and color_carbon_cofactor
 if [[ $# -eq 12 ]]
     then
-        /home/webservices/philipp/special_pymol/pymol -c -u $MOVIEMAKERPATH"movie_maker_basic.py" --input "$1" --ligand_name $2 --chain_name $3 --color_blind_friendly $4 --binding_site_radius $7 --check_halogen_interaction $8 --water_in_binding_site $9 --color_carbon "${10}" --session_export_version ${11} > /home/webservices/philipp/movie_maker_basic.log
+        /home/webservices/philipp/special_pymol/pymol -c -u $MOVIEMAKERPATH"movie_maker_basic.py" --input "$1" --ligand_name $2 --chain_name $3 --color_blind_friendly $4 --binding_site_radius $8 --check_halogen_interaction $9 --water_in_binding_site "${10}" --color_carbon "${11}" --session_export_version ${12} > /home/webservices/philipp/movie_maker_basic.log
     else
-        /home/webservices/philipp/special_pymol/pymol -c -u $MOVIEMAKERPATH"movie_maker_basic.py" --input "$1" --ligand_name $2 --chain_name $3 --color_blind_friendly $4 --binding_site_radius $7 --check_halogen_interaction $8 --water_in_binding_site $9 --color_carbon "${10}" --session_export_version ${11} --cofactor_name ${13} --color_carbon_cofactor ${14} > /home/webservices/philipp/movie_maker_basic.log
+        /home/webservices/philipp/special_pymol/pymol -c -u $MOVIEMAKERPATH"movie_maker_basic.py" --input "$1" --ligand_name $2 --chain_name $3 --color_blind_friendly $4 --binding_site_radius $8 --check_halogen_interaction $9 --water_in_binding_site "${10}" --color_carbon "${11}" --session_export_version ${12} --cofactor_name ${13} --color_carbon_cofactor ${14} > /home/webservices/philipp/movie_maker_basic.log
 fi
 
 # move created pymol session from current directory to output directory
-mv basic_movie.pse $5
+mv basic_movie.pse "$5"
 
 # move textfile from pymol-script to destination directory
-mv $POLAR_INTERACTION_FILENAME $6
+mv $POLAR_INTERACTION_FILENAME "$6"
 
 # move pml script to destination directory, in combination with session allows easy modification of the movie
-mv $MOVIE_SCRIPT_FILENAME "${12}"
+mv $MOVIE_SCRIPT_FILENAME "$7"

@@ -33,9 +33,11 @@ def parse_commandline_options():
         print("argv[%s]" % i, ele)
 
     parser = argparse.ArgumentParser(description="Trying to parse some named parameters from shellscript")
+    # parser.add_argument("-i", "--input", required=True)
     parser.add_argument("-i", "--input", required=True)
-    parser.add_argument("--ligand_name", required=True)
-    parser.add_argument("--chain_name", required=True)
+    # parser.add_argument("--ligand_name", required=True)
+    parser.add_argument("--ligand_name", type=str)
+    parser.add_argument("--chain_name", type=str, default="A")
     parser.add_argument("--color_blind_friendly", default=True)
     parser.add_argument("--binding_site_radius", type=float, default=4.0)
     parser.add_argument("--check_halogen_interaction", default=False)
@@ -53,6 +55,10 @@ def parse_commandline_options():
             # Parse commandline arguments
             PDB_NAME = input.split(".")[0]
             PDB_FILENAME = PDB_NAME + ".pdb"
+
+    # option for super basic mode
+    if not args.ligand_name:
+        options["no_ligand_selected"] = True
 
     if args.color_blind_friendly:
         if args.color_blind_friendly == "No":
@@ -173,6 +179,24 @@ def create_selections(options):
 
     # Protein structure
     cmd.select("protein_structure", "all")
+
+    if options.has_key('no_ligand_selected'):
+        # Super basic option, call ligand and chain from organic
+        print("Attempting to automatically find ligand")
+        ligand_candidates_number = cmd.select("ligand_candidate", "organic")
+        candidate_resn = ""
+        candidate_chain = ""
+        if ligand_candidates_number:
+            ligand_candidates_model = cmd.get_model("ligand_candidate")
+            for cand_atom in ligand_candidates_model.atom:
+                candidate_resn, candidate_chain = cand_atom.resn, cand_atom.chain
+                break;
+        if candidate_resn and candidate_chain:
+            print("Automatically detected ligand is '%s' in chain '%s'" % (candidate_resn, candidate_chain))
+            options['ligand_name'] = candidate_resn
+            options['chain_name'] = candidate_chain
+        else:
+            raise argparse.ArgumentError("Could not automatically detect ligand. Please make sure a ligand is contained in the provided pdb-file or use the 'Basic Mode'.")
 
     # Ligand
     number_of_ligands_selected_all = cmd.select("sele_all_ligands", "organic and chain %s and resn %s" % (options['chain_name'], options["ligand_name"]))
