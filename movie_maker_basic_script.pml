@@ -24,17 +24,17 @@ mview store, 1000, scene=F5
 turn x, 50
 mview store, 1100, power = 1.0
 turn x, 50
-mview store, 1200, scene=F5
-mview store, 1301, scene=F6
+mview store, 1150, scene=F5
+mview store, 1200, scene=F6
 turn y, 50
-mview store, 1400, power = 1.0
+mview store, 1300, power = 1.0
 turn y, -100
-mview store, 1500, power = 1.0
-mview store, 1550, scene=F7
+mview store, 1450, power = 1.0
+mview store, 1500, scene=F7
 turn y, 60
 mview store, 1700, power = 1.0
 turn y, -120
-mview store, 1850, power = 1.0
+mview store, 1800, power = 1.0
 mview store, 1900, scene=F7
 mview store, 1950, scene=F8
 turn y, 60

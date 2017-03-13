@@ -13,6 +13,7 @@ from polar_pairs import polarpairs, polartuples
 #PATH TO CURRENT DIRECTORY
 MOVIE_MAKER_PATH = os.environ.get('MOVIEMAKERPATH')
 POLAR_INTERACTIONS_FILENAME = os.environ.get('POLAR_INTERACTION_FILENAME')
+MOVIE_SCRIPT_FILENAME = os.environ.get('MOVIE_SCRIPT_FILENAME')
 SESSION_NAME = "basic_movie.pse"
 
 cmd.reinitialize()
@@ -99,7 +100,7 @@ def parse_commandline_options():
     # renaming the *.dat file to *.pdb, loading with pymol and renaming for galaxy
     os.rename(input, PDB_FILENAME)
     cmd.load(PDB_FILENAME)
-    os.rename(PDB_FILENAME, input)
+    os.rename(PDB_FILENAME, input) # rename back to *.dat
 
     return options
 
@@ -282,11 +283,6 @@ def create_selections(options):
         cmd.color(options["colors"]['nitrogen'], "polar_interacting_residues and e. N")
         cmd.color(options["colors"]['oxygen'], "polar_interacting_residues and e. O")
 
-    # old way Polar contacts
-    # cmd.distance("interaction_polar", "ligand", "binding_site", mode=2)
-    # cmd.hide("labels", "interaction_polar")
-    # cmd.color(options['colors']["interaction_polar"], "interaction_polar")
-
 
     # create selection for HOH molecules in binding pocket and make nb_spheres
     if options['water_in_binding_site']:
@@ -367,13 +363,24 @@ def create_selections(options):
 
 
 def do_it():
+    #check wheter environment variables for output are set:
+    if not MOVIE_MAKER_PATH:
+        raise argparse.ArgumentError("environment variable MOVIE_MAKER_PATH not set, got '%s' instead. Please set MOVIE_MAKER_PATH with directory of this script." % MOVIE_MAKER_PATH)
+    if not MOVIE_SCRIPT_FILENAME:
+        raise argparse.ArgumentError("environment variable MOVIE_SCRIPT_FILENAME not set, got '%s' instead." % MOVIE_SCRIPT_FILENAME)
+    if not POLAR_INTERACTIONS_FILENAME:
+        raise argparse.ArgumentError("environment variable POLAR_INTERACTIONS_FILENAME not set, got '%s' instead." % POLAR_INTERACTIONS_FILENAME)
+
     # run all script components
     commandline_options = parse_commandline_options()
     settings_dict = apply_settings(commandline_options)
     create_selections(settings_dict)
     create_views(settings_dict)
-    #create scenes and frames for movie, execute a pymol script with @
-    cmd.do("@%smovie_maker_basic_script.pml" % MOVIE_MAKER_PATH)
+    movie_script_file_path = "%smovie_maker_basic_script.pml" % MOVIE_MAKER_PATH
+    #create scenes and frames for movie
+    generate_movie_script(options=settings_dict, filepath=MOVIE_SCRIPT_FILENAME)
+    # execute a pymol script with @
+    cmd.do("@%s" % movie_script_file_path)
     #Save session
     cmd.save("basic_movie.pse")
 
@@ -398,8 +405,8 @@ def do_it():
 def create_views(options):
 
     polar_interactions_defined = not options.has_key("no_polar_interactions_found")
-    print ("polar_interactions_defined" , polar_interactions_defined)
     halogen_bonds_defined = options['check_halogen_interaction'] and options['halogen_bond_selections']
+    # print ("polar_interactions_defined" , polar_interactions_defined)
 
     cmd.disable("all")
     cmd.orient("protein_surface")
@@ -458,13 +465,6 @@ def create_views(options):
         cmd.zoom("polar_interacting_residues", 5)
     else:
         cmd.zoom("binding_site", 5)
-    #cmd.set_view("""\
-    #                 -0.652670681,   -0.733961642,    0.187926084,\
-    #                  0.654971540,   -0.671278477,   -0.346988708,\
-    #                  0.380826712,   -0.103380904,    0.918851793,\
-    #                 -0.000000000,    0.000000000,  -73.133735657,\
-    #                 52.917945862,    8.675487518,   53.204895020,\
-    #                 55.469581604,   90.797828674,  -20.000000000 """)
     cmd.view("6", action="store")
     cmd.scene("F6", action="store")
 
@@ -518,8 +518,102 @@ def create_views(options):
     cmd.viewport(500, 500)
 
 
-# TODO dont turn around z-axis
-# TODO set cartoon transparency to 0
+# generate movie script
+def generate_movie_script(options, filepath):
+    with open(filepath, "w+") as fh:
+        # fh.write("viewport 2000, 2000\n")
+        fh.write("viewport 500, 500\n")
+
+    # Basic movie:
+    # 900 frames for general inspection of protein with ligand
+    # 100 frames zooming in on binding pocket + fadeout surface of protein -> F5
+    # 200 frames inspection of ligand in binding pocket with cartoon display
+    # 50 frames transition zoom to binding site -> F6
+    # 200 frames turn 50 y and -100 y to inspect ligand interaction
+
+    number_of_frames = 1450
+
+    polar_interactions_defined = not options.has_key("no_polar_interactions_found")
+    halogen_bonds_defined = options['check_halogen_interaction'] and options['halogen_bond_selections']
+
+    if polar_interactions_defined:
+        number_of_frames += 400
+
+    if halogen_bonds_defined:
+        number_of_frames += 250
+
+    with open(filepath, "a+") as fh:
+        fh.write("mset 1x%s\n" % number_of_frames)
+        fh.write(
+            """
+mview store, 1, scene=F1
+turn y, 120
+mview store, 100, power = 1.0
+turn y, 120
+mview store, 200, power = 1.0
+mview store, 300, scene=F1
+mview store, 301, scene=F2
+movie_fade cartoon_transparency, 301, 1.0, 302, 0.0
+turn x, 120
+mview store, 400, power = 1.0
+turn x, 120
+mview store, 500, power = 1.0
+mview store, 600, scene=F2
+mview store, 601, scene=F3
+turn y, 120
+mview store, 700, power = 1.0
+turn y, 120
+mview store, 800, power = 1.0
+mview store, 900, scene=F3
+movie_fade cartoon_transparency, 901, 0.0, 990, 1.0
+mview store, 1000, scene=F5
+turn x, 50
+mview store, 1100, power = 1.0
+turn x, 50
+mview store, 1150, scene=F5
+mview store, 1200, scene=F6
+turn y, 50
+mview store, 1300, power = 1.0
+turn y, -100
+mview store, 1450, power = 1.0
+"""
+        )
+
+    current_frame_number = 1450
+
+    #only if polar interactions defined
+    # 50 frames transition zoom to binding site with polar interactions -> F7
+    # 300 frames turn 60 y and -120 y to inspect polar interactions
+    if polar_interactions_defined:
+        with open(filepath, "a+") as fh:
+            fh.write(
+            """
+mview store, 1500, scene=F7
+turn y, 60
+mview store, 1600, power = 1.0
+turn y, -120
+mview store, 1800, power = 1.0
+mview store, 1850, scene=F7
+"""
+            )
+        current_frame_number += 400
+
+    #only if halogen interactions desired
+    # 50 frames transition zoom to halogen interactions -> F8
+    # 200 frames turn y 60, -120 y to inspect halogen interactions
+    if halogen_bonds_defined:
+        with open(filepath, "a+") as fh:
+            fh.write("mview store, %s, scene=F8\n" % (current_frame_number +50))
+            fh.write("turn y, 60\n")
+            fh.write("mview store, %s, power = 1.0\n" % (current_frame_number+150))
+            fh.write("turn y, -120\n")
+            fh.write("mview store, %s, scene=F8\n" % (current_frame_number+250))
+        current_frame_number += 250
+
+    with open(filepath, "a+") as fh:
+        fh.write("mview reinterpolate\n")
+
+
 # TODO save movie commands to external file
 '''
 #record the movie

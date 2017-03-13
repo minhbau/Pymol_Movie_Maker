@@ -25,7 +25,7 @@
         '$chain'
         '$colorblind_save.selection'
         '$output'
-        '$output2'
+        '$output_polar_interaction_partners'
 
         #if $advanced_options.advanced_mode == "advanced":
             '$advanced_options.binding_site_radius.selection'
@@ -33,11 +33,12 @@
             '$advanced_options.water_in_binding_site'
             '$advanced_options.color_carbon'
             '$advanced_options.session_export_version'
-
+            '$output_pymol_movie_script'
             #if $advanced_options.cofactor_check.cofactor_in_binding_site:
                 '$advanced_options.cofactor_check.cofactor_name'
                 '$advanced_options.cofactor_check.color_carbon_cofactor'
             #end if
+
         #end if
         ]]>
   </command>
@@ -57,8 +58,8 @@
     </conditional>
     <conditional name="advanced_options" >
         <param label="Use advanced options" name="advanced_mode" type="select">
-            <option value="defaults">Use basic mode</option>
-            <option selected="True" value="advanced">Use advanced mode</option>
+            <option selected="True" value="defaults">Use basic mode</option>
+            <option value="advanced">Use advanced mode</option>
         </param>>
         <when value="defaults"></when>
         <when value="advanced">
@@ -116,7 +117,8 @@
   </inputs>
   <outputs>
     <data format="pse" name="output" />
-    <data format="txt" name="output2" />
+    <data format="txt" name="output_polar_interaction_partners" />
+    <data format="pml" name="output_pymol_movie_script" />
   </outputs>
 
   <help>
