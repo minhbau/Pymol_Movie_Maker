@@ -203,6 +203,7 @@ def create_selections(options):
     number_of_ligands_selected = cmd.select("sele_ligand", 'organic and chain %s and resn %s and alt a+""' % (options['chain_name'], options["ligand_name"]))
     # remove all duplicate conformations
     cmd.remove("sele_all_ligands and not sele_ligand")
+    cmd.delete("sele_all_ligands")
 
     #Feature: If we did not get a correct chain name from the user, we will try to guess through the whole alphabet to find it
     # otherwise the ligand will not appear in the visualization
@@ -211,9 +212,11 @@ def create_selections(options):
         for letter in ascii_uppercase:
             number_of_ligands_selected = cmd.select("sele_ligand", 'organic and chain %s and resn %s and alt a+""' % (letter, options["ligand_name"]))
             if number_of_ligands_selected:
+                options['chain_name'] = letter
                 break
 
     cmd.create("ligand", "sele_ligand")
+    cmd.delete("sele_ligand")
     cmd.show("sticks", "ligand")
     cmd.color(options["colors"]['color_carbon'], "ligand and e. C")
     cmd.color(options["colors"]['oxygen'], "ligand and e. O")
@@ -222,11 +225,11 @@ def create_selections(options):
 
     # Cofactor
     if options["cofactor_in_binding_site"]:
-        cmd.select("sele_cofactor", "resn %s" % options['cofactor_name'])
+        cmd.select("sele_cofactor", "resn %s and chain %s" % (options['cofactor_name'], options['chain_name']))
         cmd.create("cofactor", "sele_cofactor")
         cmd.show("sticks", "cofactor")
         cmd.color(options['colors']['color_cofactor'], "cofactor and e. C")
-        # cmd.delete("sele_cofactor")
+        cmd.delete("sele_cofactor")
 
     # Surface
     cmd.create("protein_surface", "all")
@@ -255,28 +258,31 @@ def create_selections(options):
     cmd.select("sele_binding_site", "ligand expand %s"%(options['binding_site_radius']))
     cmd.select("sele_binding_site", "br. sele_binding_site")
     cmd.select("sele_binding_site", "sele_binding_site and protein_structure")
-    cmd.select("sele_binding_site", "sele_binding_site and not sele_ligand")
+    cmd.select("sele_binding_site", "sele_binding_site and not ligand")
     cmd.create("binding_site", "sele_binding_site")
     cmd.delete("sele_binding_site")
+    cmd.delete("protein_structure")
     cmd.hide("surface", "binding_site")
     cmd.hide("nonbonded")
     cmd.show("sticks", "binding_site")
-    cmd.show("nb_spheres", "binding_site")
+    cmd.show("nb_spheres", "binding_site and not resn HOH")
     cmd.color(options["colors"]['binding_site'], "binding_site and e. C")
     cmd.color(options["colors"]['nitrogen'], "binding_site and e. N")
     cmd.color(options["colors"]['oxygen'], "binding_site and e. O")
 
-    # get polar interacting residues in binding site
-    pairs = polarpairs("binding_site", "ligand", cutoff=options['binding_site_radius'], name="polar_interaction_distance")
+
+    # get polar interacting residues in binding site without water
+    cmd.select("sele_no_water_binding_site", "binding_site and not resn hoh")
+    pairs = polarpairs("sele_no_water_binding_site", "ligand", cutoff=options['binding_site_radius'], name="polar_interaction_distance")
     if pairs:
         cmd.hide("labels", "polar_interaction_distance")
         cmd.color(options['colors']["interaction_polar"], "polar_interaction_distance")
     else:
         print("No polar interaction pairs found")
         options["no_polar_interactions_found"] = True
+    cmd.delete("sele_no_water_binding_site")
 
-    # print "pairs = " , pairs
-    interacting_tuples = polartuples(pairs, residue_name="polar_interaction")
+    interacting_tuples = polartuples(pairs, selection_name="polar_interaction")
 
     #create a list with selection names of polar_interacting residues
     polar_selection_names = ["resi %s and resn %s and chain %s" % tup for tup in interacting_tuples]
@@ -310,11 +316,82 @@ def create_selections(options):
 
     # create selection for HOH molecules in binding pocket and make nb_spheres
     if options['water_in_binding_site']:
-        number_of_water = cmd.select("sele_water_binding_site", "binding_site and resn hoh")
-        if number_of_water:
-            cmd.create("water_binding_site", "sele_water_binding_site and resn hoh")
-            cmd.show("nb_spheres", "water_binding_site")
-        cmd.delete("sele_water_binding_site")
+        cmd.select("sele_water_binding_site", "binding_site and resn hoh")
+        water_pairs = polarpairs("sele_water_binding_site", "ligand", cutoff=options['binding_site_radius'])
+
+        # further filter polar interactions, discard water molecules that don't interact with binding site and ligand
+        # water molecules in interacting tuples are already forming a hbond to ligand
+        water_list = []
+        water_distance_list = []
+        water_polar_tuples_list = []
+
+        if water_pairs:
+            # print("water_bridge_candidates ", water_bridge_candidates)
+            print("water_bridge_candidates ", water_pairs)
+            # water_bridge_selection_names = ["resi %s and resn %s and chain %s and polar_interacting_residues" % tup for
+            water_bridge_selection_names = ["(%s`%s)" % tup[0] for
+                                            tup in water_pairs]
+            for i, water_selection_name in enumerate(water_bridge_selection_names):
+                print("Water bridge prediction \n")
+                print("select sele_water%s, %s" % (i, water_selection_name))
+                water_selection = cmd.select("sele_water%s" % i, water_selection_name)
+                print("water selection has %s atoms" % water_selection)
+                cmd.select("sele_water_partner%s"%i, "sele_water%s expand %s" % (i, options['binding_site_radius']))
+                cmd.select("sele_water_partner%s"%i, "sele_water_partner%s and binding_site" %i)
+                cmd.select("sele_water_partner%s"%i, "sele_water_partner%s and not ligand" %i)
+                possible_binding_site_partners = cmd.select("sele_water_partner%s"%i, "sele_water_partner%s and (e. S or e. O or e. N)"%i)
+
+                print("Predicted %s possible_binding_site_partners for %s" % (possible_binding_site_partners, water_selection_name))
+
+                if possible_binding_site_partners:
+                    # check if angles allow hbond
+                    possible_pairs = polarpairs("sele_water_partner%s"%i, "sele_water%s" % i, name="d_water_%s" % i, cutoff=options['binding_site_radius'])
+                    water_list.append("sele_water%s" % i)  # contains water molecule
+                    water_distance_list.append("d_water_%s" % i)  # contains distance between water and binding site
+
+                    # creates representation for residues interacting with water in binding site
+                    water_polar_tuples_list.append(polartuples(possible_pairs, selection_name="h20_inter_%s"%i))
+                    print("water_polar_tuples_list", water_polar_tuples_list)
+                    cmd.delete("sele_water_partner%s"%i)
+
+                else:
+                    cmd.delete("sele_water%s" % i)
+
+            # print("water_list", water_list)
+            # print("water_distance_list", water_distance_list)
+            # print("water_polar_tuples_list", water_polar_tuples_list)
+            # now only show water from water list
+            water_to_output_list = []
+
+            # list of water selections to enable in the movie
+            water_to_enable_list = []
+            for water_index, (water_name, water_distance_name) in enumerate(zip(water_list, water_distance_list)):
+                # number_of_water = cmd.select("sele_water_binding_site", "binding_site and resn hoh")
+                number_of_water = cmd.select("sele_water_binding_site", water_name)
+                if number_of_water:
+                    cmd.create("water_%s" % water_index, "sele_water_binding_site")
+                    cmd.show("nb_spheres", "water_%s" % water_index)
+
+                    #get identifier of water for polar_interactions written to file
+                    w_model = cmd.get_model("water_%s" % water_index)
+                    for water_mol in w_model.atom:
+                        water_to_output_list.append((water_mol.resi, water_mol.resn, water_mol.chain))
+                    water_to_enable_list.append("water_%s" % water_index)
+                    water_to_enable_list.append(water_distance_name)
+
+                cmd.color(options['colors']["interaction_polar"], water_distance_name)
+                cmd.hide("label", water_distance_name)
+                cmd.delete(water_name)
+            cmd.delete("sele_water_binding_site")
+
+            #append water molecules to polar interactions file
+            with open("%s" % (POLAR_INTERACTIONS_FILENAME,), "a+") as f:
+                for tup in water_to_output_list:
+                    # f.write("RESI\tRESN\tCHAIN\n")
+                    f.write("%s\t%s\t%s\n" % tup)
+
+            # residues interacting with water and
+            options["water_to_enable_list"] = water_to_enable_list
 
     # Halogen Bond
     if options['check_halogen_interaction']:
@@ -376,13 +453,15 @@ def create_selections(options):
                         cmd.delete("sele_halo%s_c" % i)
                         cmd.delete("sele_halo%s_c" % i)
                         cmd.delete("sele_candidates")
+                    cmd.delete("sele_halo")
             cmd.delete("sele_%s_interaction" % halogen)
 
         # check whether we found any halogen bond interactions
         # if halogen_bond_selections has more than one element, it will
         #   evaluate as true, if empty it will be false
-        options['halogen_bond_selections'] = halogen_bond_selections
-        options['halogen_interaction_partners'] = halogen_interaction_partners
+        if halogen_bond_selections:
+            options['halogen_bond_selections'] = halogen_bond_selections
+            options['halogen_interaction_partners'] = halogen_interaction_partners
 
 
 
@@ -401,8 +480,10 @@ def do_it():
     create_selections(settings_dict)
     create_views(settings_dict)
     movie_script_file_path = "%smovie_maker_basic_script.pml" % MOVIE_MAKER_PATH
+
     #create scenes and frames for movie
-    generate_movie_script(options=settings_dict, filepath=MOVIE_SCRIPT_FILENAME)
+    print("create scenes and frames for movie in %s:" % movie_script_file_path)
+    generate_movie_script(options=settings_dict, filepath=movie_script_file_path)
     # execute a pymol script with @
     cmd.do("@%s" % movie_script_file_path)
     #Save session
@@ -429,8 +510,10 @@ def do_it():
 def create_views(options):
 
     polar_interactions_defined = not options.has_key("no_polar_interactions_found")
-    halogen_bonds_defined = options['check_halogen_interaction'] and options['halogen_bond_selections']
+    water_in_binding_site = options["water_in_binding_site"] and options.has_key("water_to_enable_list")
+    halogen_bonds_defined = options['check_halogen_interaction'] and options.has_key('halogen_bond_selections')
     # print ("polar_interactions_defined" , polar_interactions_defined)
+    # print ("halogen_bonds_defined" , halogen_bonds_defined)
 
     cmd.disable("all")
     cmd.orient("protein_surface")
@@ -487,6 +570,9 @@ def create_views(options):
         cmd.enable("polar_interacting_residues")
         cmd.enable("polar_interaction_distance")
         cmd.zoom("polar_interacting_residues", 5)
+        if water_in_binding_site:
+            for sel in options["water_to_enable_list"]:
+                cmd.enable(sel)
     else:
         cmd.zoom("binding_site", 5)
     cmd.view("6", action="store")
@@ -503,29 +589,29 @@ def create_views(options):
         cmd.enable("polar_interaction_distance")
         cmd.enable("interaction_polar")
         cmd.zoom("polar_interaction_distance", 5)
+        if water_in_binding_site:
+            for sel in options["water_to_enable_list"]:
+                cmd.enable(sel)
     else:
         cmd.zoom("ligand", 5)
     cmd.view("7", action="store")
     cmd.scene("F7", action="store")
 
     # 8 and F8
-    cmd.disable("all")
-    cmd.enable("ligand")
     if halogen_bonds_defined:
+        cmd.disable("all")
+        cmd.enable("ligand")
         for selection in options['halogen_bond_selections']:
             cmd.enable(selection)
         for selection2 in options['halogen_interaction_partners']:
             cmd.enable(selection2)
         cmd.zoom(options['halogen_bond_selections'][0], 5)
-    else:
-        cmd.zoom("ligand", 5)
-    cmd.view("8", action="store")
-    cmd.scene("F8", action="store")
+        cmd.view("8", action="store")
+        cmd.scene("F8", action="store")
 
     # 9 and F9
-    # zoom between polar interactions
+    # zoom between polar interactions?
 
-    #TODO
     #cmd.enable("interaction_halogen_bond_distance")
     #cmd.enable("interaction_halogen_bond_angle")
     #cmd.hide("sticks", "binding_site")
@@ -558,7 +644,7 @@ def generate_movie_script(options, filepath):
     number_of_frames = 1450
 
     polar_interactions_defined = not options.has_key("no_polar_interactions_found")
-    halogen_bonds_defined = options['check_halogen_interaction'] and options['halogen_bond_selections']
+    halogen_bonds_defined = options['check_halogen_interaction'] and options.has_key('halogen_bond_selections')
 
     if polar_interactions_defined:
         number_of_frames += 400
@@ -569,15 +655,14 @@ def generate_movie_script(options, filepath):
     with open(filepath, "a+") as fh:
         fh.write("mset 1x%s\n" % number_of_frames)
         fh.write(
-            """
-mview store, 1, scene=F1
+            """mview store, 1, scene=F1
+movie_fade cartoon_transparency, 301, 1.0, 302, 0.0
 turn y, 120
 mview store, 100, power = 1.0
 turn y, 120
 mview store, 200, power = 1.0
 mview store, 300, scene=F1
 mview store, 301, scene=F2
-movie_fade cartoon_transparency, 301, 1.0, 302, 0.0
 turn x, 120
 mview store, 400, power = 1.0
 turn x, 120
@@ -611,8 +696,7 @@ mview store, 1450, power = 1.0
     if polar_interactions_defined:
         with open(filepath, "a+") as fh:
             fh.write(
-            """
-mview store, 1500, scene=F7
+            """mview store, 1500, scene=F7
 turn y, 60
 mview store, 1600, power = 1.0
 turn y, -120
@@ -638,53 +722,7 @@ mview store, 1850, scene=F7
         fh.write("mview reinterpolate\n")
 
 
-# TODO save movie commands to external file
 '''
-#record the movie
-#run script with @script.txt
-#cmd.viewport(2000, 2000)
-"""
-mset 1x2000
-mview store, 1, scene=F1
-turn y, 120
-mview store, 100, power = 1.0
-turn y, 120[
-mview store, 200, power = 1.0
-mview store, 300, scene=F1
-turn x, 120
-mview store, 400, power = 1.0
-turn x, 120
-mview store, 500, power = 1.0
-mview store, 600, scene=F1
-mview store, 601, scene=F2
-turn x, 100
-mview store, 700, power = 1.0
-turn x, -100
-mview store, 800, power = 1.0
-mview store, 900, scene=F3
-turn y, 120
-mview store, 1000, power = 1.0
-turn y, 120
-mview store, 1100, power = 1.0
-mview store, 1200, scene=F3
-movie_fade cartoon_transparency, 1201, 0.0, 1290, 1.0
-mview store, 1300, scene=F5
-turn x, 50
-mview store, 1400, power = 1.0
-turn x, 50
-mview store, 1500, scene=F5
-mview store, 1600, scene=F6
-mview store, 1700, scene=F7
-turn y, 60
-mview store, 1750, power = 1.0
-turn y, -120
-mview store, 1850, power = 1.0
-mview store, 1900, scene=F7
-mview store, 2000, scene=F7
-set ray_trace_frames, 1
-"""
-
-
 """
 #TODO get all polar interacting amino acids and zoom into each of them
 # 10 frames per AA

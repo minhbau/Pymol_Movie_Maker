@@ -30,7 +30,7 @@ export MOVIEMAKERPATH="$galaxy""tools/customTools/movie_maker/"
 export PYTHONPATH="/home/webservices/philipp/special_pymol/modules:${MOVIEMAKERPATH}:${PYTHONPATH}"
 #used in pymolscript to save a seccond output
 export POLAR_INTERACTION_FILENAME="polar_interaction_partners.txt"
-export MOVIE_SCRIPT_FILENAME="movie_maker_basic_script.pml"
+export MOVIE_SCRIPT_FILENAME="${MOVIEMAKERPATH}""movie_maker_basic_script.pml"
 
 #echo "working on $MOVIEMAKERPATH"
 #echo "executing $MOVIEMAKERPATH""movie_maker_basic.py"

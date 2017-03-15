@@ -60,7 +60,7 @@ cmd.extend('polarpairs', polarpairs)
 
 
 
-def polartuples(the_polarpairs, residue_name='polar_interaction'):
+def polartuples(the_polarpairs, selection_name='polar_interaction', create_vis_and_selection=True):
     '''
     get list of polar interacting residues from polarpair
     '''
@@ -70,13 +70,15 @@ def polartuples(the_polarpairs, residue_name='polar_interaction'):
     pairs = list(set([p[0] for p in the_polarpairs]))  # remove duplicate entries
     for i, p in enumerate(pairs):
         # create the object for our visualization
-        pair_name = residue_name + '_%s' % (i,)
-        sele_pair_name = "sele_" + residue_name + '_%s' % (i,)
+        pair_name = selection_name + '_%s' % (i,)
+        sele_pair_name = "sele_" + selection_name + '_%s' % (i,)
         cmd.select(sele_pair_name, "(%s`%s)" % p)
         cmd.select(sele_pair_name, 'byres ' + sele_pair_name)
         cmd.create(pair_name, sele_pair_name)
         cmd.delete(sele_pair_name)
-        cmd.show('sticks', pair_name)
+
+        if create_vis_and_selection:
+            cmd.show('sticks', pair_name)
         temp_model = cmd.get_model(pair_name)
 
         #extract resn, resi, and chain identifier from binding site
@@ -89,6 +91,8 @@ def polartuples(the_polarpairs, residue_name='polar_interaction'):
                 # print a_tuple
                 break
         # print p, 'Distance: %.2f' % (dist)
+        if not create_vis_and_selection:
+            cmd.delete(pair_name)
 
     return polar_resn_tuples
 

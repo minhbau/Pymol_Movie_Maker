@@ -11,7 +11,7 @@
     </stdio>
     <!-- old command structure: <command interpreter="bash">movie_maker_basic.sh '$input' '$residue_name' '$chain' '$colorblind_save.selection' '$output' '$output2'</command> -->
     <!-- use cheetah template engine for interpretation and decision making on variables instead of just bash -->
-    <command>
+    <command    >
       <![CDATA[
 
         #if $advanced_options.advanced_mode == "advanced":
@@ -70,24 +70,23 @@
             <param format="text" name="chain" size="1" type="text" label="Chain">
                 <validator type="regex" message="Wrong format! Please enter just 1 letter.">^[A-Z,a-z]{1}$</validator>
             </param>
-
-            <conditional name="colorblind_save">
-                <param name="selection" type="select" label="Use colorblind save coloring">
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                </param>
-            </conditional>
-            <param name="color_carbon" type="select" label="Color of ligand backbone">
-                <option value="yellow">Yellow</option>
-                <option value="grey">Grey</option>
-                <option value="orange">Orange</option>
-            </param>
             <param name="session_export_version" type="select" label="Select target version for PyMol session">
                 <option value="1.2" selected="True">1.2 Legacy support (2009)</option>
                 <option value="1.72">1.72 Volumes support (2014)</option>
                 <option value="1.76">1.76 Scenes support (2015)</option>
                 <option value="1.84">1.84 Recent version (late 2016)</option>
             </param>
+            <param name="color_carbon" type="select" label="Color of carbon atoms in the ligand">
+                <option value="yellow">Yellow</option>
+                <option value="grey">Grey</option>
+                <option value="orange">Orange</option>
+            </param>
+            <conditional name="colorblind_save">
+                <param name="selection" type="select" label="Use colorblind save coloring">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </param>
+            </conditional>
         </when>
 
 
@@ -99,24 +98,6 @@
             <param format="text" name="chain" size="1" type="text" label="Chain">
                 <validator type="regex" message="Wrong format! Please enter just 1 letter.">^[A-Z,a-z]{1}$</validator>
             </param>
-
-            <conditional name="colorblind_save">
-                <param name="selection" type="select" label="Use colorblind save coloring">
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                </param>
-            </conditional>
-            <param name="color_carbon" type="select" label="Color of ligand backbone">
-                <option value="yellow">Yellow</option>
-                <option value="grey">Grey</option>
-                <option value="orange">Orange</option>
-            </param>
-            <param name="session_export_version" type="select" label="Select target version for PyMol session">
-                <option value="1.2" selected="True">1.2 Legacy support (2009)</option>
-                <option value="1.72">1.72 Volumes support (2014)</option>
-                <option value="1.76">1.76 Scenes support (2015)</option>
-                <option value="1.84">1.84 Recent version (late 2016)</option>
-            </param>
             <conditional name="binding_site_radius">
                 <param name="selection" type="select" label="Define size of binding pocket">
                     <option value="4.0" selected="True">4.0 A</option>
@@ -126,7 +107,7 @@
                     <option value="6.0">6.0 A</option>
                 </param>
             </conditional>
-            <param name="check_halogen_interaction" type="boolean" checked="true"
+        <param name="check_halogen_interaction" type="boolean" checked="true"
                    label="Display possible halogen interaction in binding site?"
                    selected="True"
                    truevalue="Yes" falsevalue="No">
@@ -137,23 +118,39 @@
                    truevalue="Yes" falsevalue="No">
             </param>
             <conditional name="cofactor_check">
-                <param name="cofactor_in_binding_site" type="boolean" checked="true"
+                <param name="cofactor_in_binding_site" type="boolean" checked="false"
                        label="Display cofactor in binding site?"
-                       selected="False"
+                       selected="True"
                        truevalue="Yes" falsevalue="No">
                 </param>
                 <when value="Yes">
                     <param format="text" name="cofactor_name" size="3" type="text" label="Insert 3 letter cofactor residue name">
                         <validator type="regex" message="Wrong format! Please enter just 3 letters.">^[A-Z,a-z,0-9]{3}$</validator>
                     </param>
-                    <param name="color_carbon_cofactor" type="select" label="Color of cofactor backbone">
+                    <param name="color_carbon_cofactor" type="select" label="Color of carbon atoms in the cofactor">
                         <option value="orange" selected="True">Orange</option>
                         <option value="yellow">Yellow</option>
                         <option value="grey">Grey</option>
                     </param>
                 </when>
-                <when value="No"></when>
             </conditional>
+            <param name="color_carbon" type="select" label="Color of carbon atoms in the ligand">
+                <option value="yellow">Yellow</option>
+                <option value="grey">Grey</option>
+                <option value="orange">Orange</option>
+            </param>
+            <conditional name="colorblind_save">
+                <param name="selection" type="select" label="Use colorblind save coloring">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </param>
+            </conditional>
+            <param name="session_export_version" type="select" label="Select target version for PyMol session">
+                <option value="1.2" selected="True">1.2 Legacy support (2009)</option>
+                <option value="1.72">1.72 Volumes support (2014)</option>
+                <option value="1.76">1.76 Scenes support (2015)</option>
+                <option value="1.84">1.84 Recent version (late 2016)</option>
+            </param>
         </when>
     </conditional>
   </inputs>
@@ -165,39 +162,70 @@
 
   <help>
 
-**What it does**
+.. This is a comment, see http://docutils.sourceforge.net/docs/user/rst/quickref.html for help formating syntax
+
+What it does
+============
 
 This tool creates a PyMol session, which can be used to produce a movie with PyMol.
 
-**Input Parameter**
+Additionally the predicted residues that form polar interactions with the ligand are saved in a textfile.
 
-Following parameters should be entered to allow a flawless computation:
+Lastly the script to create PyMol scenes and a movie is returned for manual editing and convenience of the user.
 
-    pdb-file
-    three letter code of ligand
-    chain of the binding pocket in question
-    selection which colorscheme to use
 
-Example:
-    1r4l.pdb
-    XX5
-    A
-    Yes
+Input Parameter
+===============
 
-**Output**
+Three different modi are provided for the user, 'Super Basic Mode', 'Basic Mode' and 'Advanced Mode'.
 
-The tool produces two output files.
-The pymol session (\*.pse) can be downloaded as pse file and loaded with pymol.
-In addition a pymol script-file (\*.pml) which was used for the generation of the scenes in the pse file, can be downloaded separately.
-Pymol script files can conveniently be executed via the commandline ind the graphical interface with the command
+The 'Super Basic Mode' requires only the input of a pdb-file, and guesses the ligand residue code and chain identifier, defining the first found organic residue as ligand.
 
-      \@scriptfile
+In addition to the pdb-file, the 'Basic Mode' requires the ligand residue code and chain identifier, but also allows to define the target pymol version and select a color scheme.
 
-**DEBUGGING**
+The 'Advanced Mode' gives the user the most control over passed parameters. In addition to the parameters available in the basic mode, it let's the user define the binding pocket with size, wheter water molecules or a cofactor should be considered.
 
-      If there is no molecule present in the binding pocket, make sure you defined the correct ligand residue name, this script will already try to guess the chain identifier.
 
-      To check your local version of pymol open a commandline an call "pymol -c"
+Output
+======
+
+The tool produces three output files.
+
+
+A pymol script-file (\*.pml) which was used for the generation of the scenes in the pse file, can be downloaded separately.
+Pymol script files can conveniently be executed via the commandline in the pymol interface with the command
+
+      \@scriptfile.pml
+
+In addition a textfile containing the polar interacting residues is returned.
+
+The pymol session (\*.pse) can be downloaded as pse file and loaded with pymol with the load command, e.g.
+
+     load Galaxy_session.pse
+
+
+
+Usage of session
+================
+
+For your convenience scenes are created in the pymol session for inspection of the protein ligand interaction. They can be accessed by pressing the function keys
+F1 to F8.
+
+:F1: Surface for general inspection of the protein
+:F2: Surface with ligand
+:F3: Cartoon representation of protein with ligand
+:F4: Ligand and residues in radius of binding site
+:F5: Ligand (and cofactor) with cartoon protein
+:F6: Ligand and residues in radius of binding site
+:F7: Ligand and polar interacting residues
+:F8: Ligand and residues with predicted halogen-bonds to carboxyl or sulfur atoms in the backbone
+
+
+Debugging
+=========
+
+If there is no molecule present in the binding pocket, make sure you defined the correct ligand residue name, this script will already try to guess the chain identifier.
+To check your local version of pymol open a commandline and call "pymol -c"
 
   </help>
 
