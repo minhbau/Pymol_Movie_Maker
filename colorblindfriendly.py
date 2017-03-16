@@ -101,4 +101,4 @@ for c in cb_colors:
     # alternate names
     for alt in c[2]:
         cmd.set_color("cb_%s" % alt, c[1])
-        print("           cb_%s" % alt)
+        # print("           cb_%s" % alt)

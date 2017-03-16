@@ -5,22 +5,16 @@
 #echo $3  # chain
 #echo $4  # use colorblind friendly coloring?
 #echo $5  # path pse file
-#echo $6  # path pymol-script file
-# TODO $7 changed
-#echo $7  # binding_site_radius
-#echo $8  # check_halogen_interaction
-#echo $9  # water_in_binding_site
-#echo $10 # color_carbon
-#echo $11 # session_export_version
-#
-#echo $7
-#echo $8
-#echo $9
-#echo $10
-#echo $11
-#echo $12 # filename of output_pymol_movie_script
-#echo $13
-#echo $14
+#echo $6  # path to polar interaction .txt file
+#echo $7  # path pymol-script .pml file
+#echo $8  # binding_site_radius
+#echo $9  # check_halogen_interaction
+#echo $10  # water_in_binding_site
+#echo $11 # color_carbon
+#echo $12 # session_export_version
+#echo $13 # color of polar-interactions
+#echo $14 # cofactor name
+#echo $15 # color of carbon in cofactor
 
 #used in our pymolscript as prefix for our script files, $galaxy is set in the startup script of the galaxy server
 export MOVIEMAKERPATH="$galaxy""tools/customTools/movie_maker/"
@@ -35,12 +29,12 @@ export MOVIE_SCRIPT_FILENAME="${MOVIEMAKERPATH}""movie_maker_basic_script.pml"
 #echo "working on $MOVIEMAKERPATH"
 #echo "executing $MOVIEMAKERPATH""movie_maker_basic.py"
 #echo "got "$#" arguments" > /home/webservices/philipp/movie_maker_basic.log
-#check number of passed arguments, if we have 12, we have no cofactor, if 14 cofactor and color_carbon_cofactor
-if [[ $# -eq 12 ]]
+#check number of passed arguments, if we have 13, we have no cofactor, if 15 cofactor and color_carbon_cofactor
+if [[ $# -eq 13 ]]
     then
-        /home/webservices/philipp/special_pymol/pymol -c -u $MOVIEMAKERPATH"movie_maker_basic.py" --input "$1" --ligand_name $2 --chain_name $3 --color_blind_friendly $4 --binding_site_radius $8 --check_halogen_interaction $9 --water_in_binding_site "${10}" --color_carbon "${11}" --session_export_version ${12} > /home/webservices/philipp/movie_maker_basic.log
+        /home/webservices/philipp/special_pymol/pymol -c -u $MOVIEMAKERPATH"movie_maker.py" --input "$1" --ligand_name $2 --chain_name $3 --color_blind_friendly $4 --binding_site_radius $8 --check_halogen_interaction $9 --water_in_binding_site "${10}" --color_carbon "${11}" --session_export_version ${12} --color_polar_interactions ${13} > /home/webservices/philipp/movie_maker_basic.log
     else
-        /home/webservices/philipp/special_pymol/pymol -c -u $MOVIEMAKERPATH"movie_maker_basic.py" --input "$1" --ligand_name $2 --chain_name $3 --color_blind_friendly $4 --binding_site_radius $8 --check_halogen_interaction $9 --water_in_binding_site "${10}" --color_carbon "${11}" --session_export_version ${12} --cofactor_name ${13} --color_carbon_cofactor ${14} > /home/webservices/philipp/movie_maker_basic.log
+        /home/webservices/philipp/special_pymol/pymol -c -u $MOVIEMAKERPATH"movie_maker.py" --input "$1" --ligand_name $2 --chain_name $3 --color_blind_friendly $4 --binding_site_radius $8 --check_halogen_interaction $9 --water_in_binding_site "${10}" --color_carbon "${11}" --session_export_version ${12} --color_polar_interactions ${13} --cofactor_name ${14} --color_carbon_cofactor ${15} > /home/webservices/philipp/movie_maker_basic.log
 fi
 
 # move created pymol session from current directory to output directory

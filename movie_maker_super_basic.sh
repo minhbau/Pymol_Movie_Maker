@@ -19,7 +19,7 @@ export MOVIE_SCRIPT_FILENAME="movie_maker_basic_script.pml"
 
 if [[ $# -eq 4 ]]
     then
-        /home/webservices/philipp/special_pymol/pymol -c -u $MOVIEMAKERPATH"movie_maker_basic.py" --input "$1" > /home/webservices/philipp/movie_maker_basic.log
+        /home/webservices/philipp/special_pymol/pymol -c -u $MOVIEMAKERPATH"movie_maker.py" --input "$1" > /home/webservices/philipp/movie_maker_basic.log
     else
         (>&2 echo "'Super Basic mode' failed, wrong number of parameters, got "$#" expected 4")
 fi

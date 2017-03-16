@@ -44,6 +44,7 @@ def parse_commandline_options():
     parser.add_argument("--water_in_binding_site", default=True)
     parser.add_argument("--color_carbon", type=str, default="yellow")
     parser.add_argument("--session_export_version", type=float, default=1.2)
+    parser.add_argument("--color_polar_interactions", type=str, default="blue")
     parser.add_argument("--cofactor_name", type=str, default="")
     parser.add_argument("--color_carbon_cofactor", type=str, default="orange")
     # parser.add_argument("--", required=True)
@@ -86,6 +87,20 @@ def parse_commandline_options():
             elif args.color_carbon == "orange":
                 options["color_carbon"] = "cb_orange"
 
+    allowed_polar_colors = set(["red", "blue", "yellow", "black", "hotpink"])
+    if args.color_polar_interactions and (args.color_polar_interactions in allowed_polar_colors):
+        # options are yellow, red, blue, black and hotpink
+        if options['color_blind_friendly']:
+            if args.color_polar_interactions != "hotpink":
+                options["color_polar_interactions"] = "cb_%s" % args.color_polar_interactions
+            else:
+                options["color_polar_interactions"] = "hot_pink"
+    else:
+        if options['color_blind_friendly']:
+            options["color_polar_interactions"] = "cb_blue"
+        else:
+            options["color_polar_interactions"] = "blue"
+
     session_version = 1.2
     if args.session_export_version:
         allowed_versions = {1.2, 1.72, 1.76, 1.84}
@@ -120,6 +135,8 @@ def apply_color_switch(commandline_options):
 
     # import color settings
     cmd.do("run %scolorblindfriendly.py" % MOVIE_MAKER_PATH)
+    # hotpink rgb: 255, 105, 180
+    cmd.set_color("hot_pink", (255.0/255.0, 105.0/255.0, 180.0/255.0))
 
     if color_blind_save_selected:
         color_dict['protein_surface'] = "cb_sky_blue"
@@ -133,7 +150,7 @@ def apply_color_switch(commandline_options):
                 # color_dict['cofactor'] = "grey50"
                 color_dict['color_cofactor'] = "grey50"
         color_dict['binding_site'] = "grey50"
-        color_dict['interaction_polar'] = "cb_blue"
+        # color_dict['interaction_polar'] = "cb_blue"
         color_dict['oxygen'] = "cb_red"
         color_dict['nitrogen'] = "cb_blue"
 
@@ -145,9 +162,11 @@ def apply_color_switch(commandline_options):
             color_dict['color_cofactor'] = cofactor_color
             # commandline_options['color_cofactor'] = cofactor_color
         color_dict['binding_site'] = "grey50"
-        color_dict['interaction_polar'] = "blue"
+        # color_dict['interaction_polar'] = "blue"
         color_dict['oxygen'] = "red"
         color_dict['nitrogen'] = "blue"
+
+    color_dict['interaction_polar'] = commandline_options['color_polar_interactions']
 
     return color_dict
 
@@ -402,7 +421,6 @@ def create_selections(options):
             print("We have %s %s atoms in our ligand" % (number_of_halogen, halogen))
             if number_of_halogen:
 
-                # cmd.create("%s_interaction" % halogen, "sele_%s_interaction" % halogen)
                 cmd.select("sele_candidates",
                            "sele_%s_interaction expand 4.5" %halogen)
                 cmd.select("sele_candidates",
@@ -465,7 +483,7 @@ def create_selections(options):
 
 
 
-def do_it():
+def main():
     #check wheter environment variables for output are set:
     if not MOVIE_MAKER_PATH:
         raise argparse.ArgumentError("environment variable MOVIE_MAKER_PATH not set, got '%s' instead. Please set MOVIE_MAKER_PATH with directory of this script." % MOVIE_MAKER_PATH)
@@ -611,21 +629,21 @@ def create_views(options):
 
     # 9 and F9
     # zoom between polar interactions?
+    """
+    #TODO get all polar interacting amino acids and zoom into each of them
+    # 10 frames per AA
+    mset 1 x1440
+    mview store
 
-    #cmd.enable("interaction_halogen_bond_distance")
-    #cmd.enable("interaction_halogen_bond_angle")
-    #cmd.hide("sticks", "binding_site")
-    #cmd.hide("nb_spheres", "binding_site")
-    #cmd.set_view ("""\
-    #        -0.685239613,   -0.717070580,   -0.127501234,\
-    #         0.620792449,   -0.483501613,   -0.617124677,\
-    #         0.380877644,   -0.502027392,    0.776465952,\
-    #         0.000000000,   -0.000000000,  -98.679916382,\
-    #        51.064998627,    6.873000145,   55.061000824,\
-    #        84.767715454,  112.592117310,  -20.000000000 """)
-    # cmd.view("7", action="store")
-    # cmd.scene("F7", action="store")
-    cmd.viewport(500, 500)
+    # this code maps the zooming of
+    # one AA and it's neighbor to 10 frames
+    python
+    for x in range(0,144):
+      cmd.frame((10*x)+1)
+      cmd.zoom( "n. CA and i. " + str(x) + "+" + str(x+1))
+      cmd.mview("store")
+    python end
+    """
 
 
 # generate movie script
@@ -722,23 +740,5 @@ mview store, 1850, scene=F7
         fh.write("mview reinterpolate\n")
 
 
-'''
-"""
-#TODO get all polar interacting amino acids and zoom into each of them
-# 10 frames per AA
-mset 1 x1440
-mview store
-
-# this code maps the zooming of
-# one AA and it's neighbor to 10 frames
-python
-for x in range(0,144):
-  cmd.frame((10*x)+1)
-  cmd.zoom( "n. CA and i. " + str(x) + "+" + str(x+1))
-  cmd.mview("store")
-python end
-"""
-'''
-
-do_it()
+main()
 
