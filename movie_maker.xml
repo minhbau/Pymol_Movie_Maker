@@ -1,4 +1,4 @@
-<tool id="movie_maker_basic" name="Movie Maker">
+<tool id="movie_maker" name="Movie Maker">
   <description>produces a PyMol session for the creation of a protein ligand interaction movie</description>
     <!-- Show Error messages in right sidebar -->
     <stdio>

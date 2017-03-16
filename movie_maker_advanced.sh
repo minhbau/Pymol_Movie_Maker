@@ -34,7 +34,7 @@ if [[ $# -eq 13 ]]
     then
         /home/webservices/philipp/special_pymol/pymol -c -u $MOVIEMAKERPATH"movie_maker.py" --input "$1" --ligand_name $2 --chain_name $3 --color_blind_friendly $4 --binding_site_radius $8 --check_halogen_interaction $9 --water_in_binding_site "${10}" --color_carbon "${11}" --session_export_version ${12} --color_polar_interactions ${13} > /home/webservices/philipp/movie_maker_basic.log
     else
-        /home/webservices/philipp/special_pymol/pymol -c -u $MOVIEMAKERPATH"movie_maker.py" --input "$1" --ligand_name $2 --chain_name $3 --color_blind_friendly $4 --binding_site_radius $8 --check_halogen_interaction $9 --water_in_binding_site "${10}" --color_carbon "${11}" --session_export_version ${12} --color_polar_interactions ${13} --cofactor_name ${14} --color_carbon_cofactor ${15} > /home/webservices/philipp/movie_maker_basic.log
+        /home/webservices/philipp/special_pymol/pymol -c -u $MOVIEMAKERPATH"movie_maker.py" --input "$1" --ligand_name "$2" --chain_name "$3" --color_blind_friendly "$4" --binding_site_radius "$8" --check_halogen_interaction $9 --water_in_binding_site "${10}" --color_carbon "${11}" --session_export_version ${12} --color_polar_interactions ${13} --cofactor_name ${14} --color_carbon_cofactor ${15} > /home/webservices/philipp/movie_maker_basic.log
 fi
 
 # move created pymol session from current directory to output directory

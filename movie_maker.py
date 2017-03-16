@@ -218,7 +218,7 @@ def create_selections(options):
             raise argparse.ArgumentError("Could not automatically detect ligand. Please make sure a ligand is contained in the provided pdb-file or use the 'Basic Mode'.")
 
     # Ligand
-    number_of_ligands_selected_all = cmd.select("sele_all_ligands", "organic and chain %s and resn %s" % (options['chain_name'], options["ligand_name"]))
+    cmd.select("sele_all_ligands", "organic and chain %s and resn %s" % (options['chain_name'], options["ligand_name"]))
     number_of_ligands_selected = cmd.select("sele_ligand", 'organic and chain %s and resn %s and alt a+""' % (options['chain_name'], options["ligand_name"]))
     # remove all duplicate conformations
     cmd.remove("sele_all_ligands and not sele_ligand")
@@ -292,10 +292,11 @@ def create_selections(options):
 
     # get polar interacting residues in binding site without water
     cmd.select("sele_no_water_binding_site", "binding_site and not resn hoh")
-    pairs = polarpairs("sele_no_water_binding_site", "ligand", cutoff=options['binding_site_radius'], name="polar_interaction_distance")
+    cmd.select("sele_no_water_binding_site", "sele_no_water_binding_site and not resn %s" % options['ligand_name'])
+    pairs = polarpairs("sele_no_water_binding_site", "ligand", cutoff=options['binding_site_radius'], name="polar_int_d")
     if pairs:
-        cmd.hide("labels", "polar_interaction_distance")
-        cmd.color(options['colors']["interaction_polar"], "polar_interaction_distance")
+        cmd.hide("labels", "polar_int_d")
+        cmd.color(options['colors']["interaction_polar"], "polar_int_d")
     else:
         print("No polar interaction pairs found")
         options["no_polar_interactions_found"] = True
@@ -586,7 +587,7 @@ def create_views(options):
         cmd.enable("cofactor")
     if polar_interactions_defined:
         cmd.enable("polar_interacting_residues")
-        cmd.enable("polar_interaction_distance")
+        cmd.enable("polar_int_d")
         cmd.zoom("polar_interacting_residues", 5)
         if water_in_binding_site:
             for sel in options["water_to_enable_list"]:
@@ -604,9 +605,9 @@ def create_views(options):
     # cmd.enable("binding_site")
     if polar_interactions_defined:
         cmd.enable("polar_interacting_residues")
-        cmd.enable("polar_interaction_distance")
+        cmd.enable("polar_int_d")
         cmd.enable("interaction_polar")
-        cmd.zoom("polar_interaction_distance", 5)
+        cmd.zoom("polar_int_d", 5)
         if water_in_binding_site:
             for sel in options["water_to_enable_list"]:
                 cmd.enable(sel)
