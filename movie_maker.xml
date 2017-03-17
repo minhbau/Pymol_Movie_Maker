@@ -161,6 +161,9 @@
             </param>
         </when>
     </conditional>
+    <param format="text" name="password" size="10" type="text" label="Password">
+        <validator type="regex" message="Wrong Password!">^4agl$</validator>
+    </param>
   </inputs>
   <outputs>
     <data format="pse" name="output" />
