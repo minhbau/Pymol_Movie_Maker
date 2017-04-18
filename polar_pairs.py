@@ -3,6 +3,7 @@ Authors:
     2011 Thomas Holder, MPI for Developmental Biology
     Available at https://pymolwiki.org/index.php/Polarpairs
 
+    Additions:
     2017 Philipp Weber, philmaweb@gmail.com
 
 
@@ -97,5 +98,3 @@ def polartuples(the_polarpairs, selection_name='polar_interaction', create_vis_a
     return polar_resn_tuples
 
 cmd.extend('polartuples', polartuples)
-
-

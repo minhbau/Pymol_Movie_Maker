@@ -1,3 +1,26 @@
+'''
+LICENSE
+
+Copyright (c) 2017 Philipp Weber
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+'''
 from pymol import cmd
 import argparse  # library for parsing commandline parameters
 from sys import argv
@@ -241,7 +264,6 @@ def create_selections(options):
     cmd.color(options["colors"]['oxygen'], "ligand and e. O")
     cmd.color(options["colors"]['nitrogen'], "ligand and e. N")
 
-
     # Cofactor
     if options["cofactor_in_binding_site"]:
         cmd.select("sele_cofactor", "resn %s and chain %s" % (options['cofactor_name'], options['chain_name']))
@@ -272,7 +294,6 @@ def create_selections(options):
     cmd.copy("protein_cartoon_transparent_more", "protein_cartoon")
     cmd.set("cartoon_transparency", 0.9, "protein_cartoon_transparent_more")
 
-
     # Binding Site
     cmd.select("sele_binding_site", "ligand expand %s"%(options['binding_site_radius']))
     cmd.select("sele_binding_site", "br. sele_binding_site")
@@ -288,7 +309,6 @@ def create_selections(options):
     cmd.color(options["colors"]['binding_site'], "binding_site and e. C")
     cmd.color(options["colors"]['nitrogen'], "binding_site and e. N")
     cmd.color(options["colors"]['oxygen'], "binding_site and e. O")
-
 
     # get polar interacting residues in binding site without water
     cmd.select("sele_no_water_binding_site", "binding_site and not resn hoh")
@@ -509,23 +529,6 @@ def main():
     cmd.save("basic_movie.pse")
 
 
-#
-# def print_binding_site_residues():
-#     # print all binding site residues with residue numbers
-#     model_binding_site = cmd.get_model("binding_site")
-#     my_resns_set = set([])
-#     my_resns = []
-#     for resid in model_binding_site.atom:
-#         a_tuple = (resid.resn, resid.resi)
-#         resn, resi = a_tuple
-#         if a_tuple not in my_resns_set:
-#             my_resns_set.add(a_tuple)
-#             #print a_tuple
-#             #print('cmd.select("sele_interacting_%s%s", "sele_binding_site and resi %s")' % (resn,resi,resi))
-#             my_resns.append(a_tuple)
-#     return my_resns
-
-
 def create_views(options):
 
     polar_interactions_defined = not options.has_key("no_polar_interactions_found")
@@ -631,7 +634,7 @@ def create_views(options):
     # 9 and F9
     # zoom between polar interactions?
     """
-    #TODO get all polar interacting amino acids and zoom into each of them
+    #possible addition: get all polar interacting amino acids and zoom into each of them
     # 10 frames per AA
     mset 1 x1440
     mview store
